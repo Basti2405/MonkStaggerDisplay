@@ -139,6 +139,32 @@ function ns.GetPlayerAuraStacks(spellID)
     return 0, nil
 end
 
+--- Meldet ein Ereignis an, sofern dieser Client es kennt.
+--- ------------------------------------------------------------------------
+--- Blizzard entfernt und benennt Ereignisse um; LEARNED_SPELL_IN_TAB etwa
+--- existiert in Midnight nicht mehr. RegisterEvent wirft bei einem
+--- unbekannten Namen, und der Fehler reisst alles mit, was danach kommt.
+--- C_EventUtils.IsEventValid ist der dafuer vorgesehene Weg; das pcall
+--- daneben faengt auch den Fall ab, dass es die Pruefung selbst nicht gibt.
+function ns.RegisterEventSafely(frame, event, unit)
+    if C_EventUtils and C_EventUtils.IsEventValid
+       and not C_EventUtils.IsEventValid(event) then
+        ns.Debug("Ereignis in diesem Client unbekannt, übersprungen:", event)
+        return false
+    end
+    local ok = pcall(function()
+        if unit then
+            frame:RegisterUnitEvent(event, unit)
+        else
+            frame:RegisterEvent(event)
+        end
+    end)
+    if not ok then
+        ns.Debug("Ereignis konnte nicht angemeldet werden:", event)
+    end
+    return ok
+end
+
 --- Gesperrte Werte ("secret values", ab Midnight/12.0)
 --- ------------------------------------------------------------------------
 --- Blizzard versieht seit 12.0 bestimmte Unit-Werte mit einem Sperrvermerk.

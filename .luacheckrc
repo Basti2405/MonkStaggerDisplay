@@ -23,6 +23,7 @@ read_globals = {
 
     -- Namespaces
     "C_AddOns", "C_Spell", "C_UnitAuras", "C_SpecializationInfo", "C_SpellBook",
+    "C_EventUtils",
     "Settings",
 
     -- UI-Bausteine
@@ -54,5 +55,5 @@ globals = {
 -- Der Testlauf ersetzt absichtlich API-Funktionen, um Szenarien zu erzeugen.
 files["tests/run_tests.lua"] = {
     globals = { "UnitStagger", "UnitHealth", "UnitHealthMax", "UnitAffectingCombat" },
-    read_globals = { "MarkSecret", "issecretvalue" },
+    read_globals = { "MarkSecret", "issecretvalue", "C_EventUtils" },
 }

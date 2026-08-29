@@ -420,7 +420,6 @@ end
 
 eventHandlers.PLAYER_TALENT_UPDATE   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
 eventHandlers.TRAIT_CONFIG_UPDATED   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
-eventHandlers.LEARNED_SPELL_IN_TAB   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
 
 function eventHandlers.PLAYER_REGEN_DISABLED(self)
     -- Kampfbeginn: sofort einblenden, kein Fade
@@ -575,24 +574,36 @@ function Core:Initialize()
     end)
     frame:SetScript("OnUpdate", OnUpdate)
 
-    frame:RegisterEvent("ADDON_LOADED")
-    frame:RegisterEvent("PLAYER_LOGIN")
-    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
-    frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
-    frame:RegisterEvent("PLAYER_TALENT_UPDATE")
-    frame:RegisterEvent("TRAIT_CONFIG_UPDATED")
-    frame:RegisterEvent("LEARNED_SPELL_IN_TAB")
-    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
-    frame:RegisterEvent("PLAYER_REGEN_ENABLED")
-    frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
-    frame:RegisterEvent("SPELL_UPDATE_CHARGES")
+    -- Ereignisse anmelden. Blizzard entfernt und benennt Ereignisse um --
+    -- LEARNED_SPELL_IN_TAB etwa gibt es in Midnight nicht mehr. Ein
+    -- unbekannter Name wirft, und der Fehler riss frueher den gesamten Rest
+    -- der Initialisierung mit: alles nach der betroffenen Zeile blieb
+    -- unregistriert. Deshalb wird jeder Name vorher geprueft.
+    for _, event in ipairs({
+        "ADDON_LOADED",
+        "PLAYER_LOGIN",
+        "PLAYER_ENTERING_WORLD",
+        "PLAYER_SPECIALIZATION_CHANGED",
+        "PLAYER_TALENT_UPDATE",
+        "TRAIT_CONFIG_UPDATED",
+        "PLAYER_REGEN_DISABLED",
+        "PLAYER_REGEN_ENABLED",
+        "SPELL_UPDATE_COOLDOWN",
+        "SPELL_UPDATE_CHARGES",
+    }) do
+        ns.RegisterEventSafely(frame, event)
+    end
 
     -- Nur spielerbezogene Unit-Ereignisse
-    frame:RegisterUnitEvent("UNIT_HEALTH", "player")
-    frame:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
-    frame:RegisterUnitEvent("UNIT_AURA", "player")
-    frame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
-    frame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+    for _, event in ipairs({
+        "UNIT_HEALTH",
+        "UNIT_MAXHEALTH",
+        "UNIT_AURA",
+        "UNIT_ENTERED_VEHICLE",
+        "UNIT_EXITED_VEHICLE",
+    }) do
+        ns.RegisterEventSafely(frame, event, "player")
+    end
 end
 
 Core:Initialize()

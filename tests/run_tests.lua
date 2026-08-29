@@ -237,6 +237,28 @@ ns.Core:BuildState()
 check("erneuter Anstieg setzt ihn wieder", ns.Core.lastDamageTime > nachAnstieg)
 UnitStagger = function() return 450000 end
 
+print("\n== Ereignisanmeldung (unbekannte Ereignisse) ==")
+-- Gemeldet aus dem Spiel: Attempt to register unknown event
+-- "LEARNED_SPELL_IN_TAB". Der Fehler warf in Initialize und riss alle
+-- Anmeldungen danach mit - UNIT_HEALTH und die Kampfereignisse fehlten.
+check("Attrappe wirft bei unbekanntem Ereignis (wie im Spiel)",
+      not pcall(function() core:RegisterEvent("LEARNED_SPELL_IN_TAB") end))
+check("C_EventUtils.IsEventValid erkennt es",
+      C_EventUtils.IsEventValid("LEARNED_SPELL_IN_TAB") == false)
+check("RegisterEventSafely wirft nicht, meldet false",
+      select(2, pcall(ns.RegisterEventSafely, core, "LEARNED_SPELL_IN_TAB")) == false)
+
+-- Alles, was nach der frueher fehlerhaften Zeile kam, muss angemeldet sein.
+for _, e in ipairs({ "ADDON_LOADED", "PLAYER_LOGIN", "PLAYER_ENTERING_WORLD",
+                     "PLAYER_SPECIALIZATION_CHANGED", "PLAYER_REGEN_DISABLED",
+                     "PLAYER_REGEN_ENABLED", "SPELL_UPDATE_COOLDOWN",
+                     "SPELL_UPDATE_CHARGES", "UNIT_HEALTH", "UNIT_MAXHEALTH",
+                     "UNIT_AURA" }) do
+    check("angemeldet: " .. e, core.__events[e] == true)
+end
+check("LEARNED_SPELL_IN_TAB wird nicht mehr angemeldet",
+      core.__events["LEARNED_SPELL_IN_TAB"] == nil)
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")

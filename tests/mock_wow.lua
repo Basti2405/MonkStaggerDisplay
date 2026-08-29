@@ -40,8 +40,26 @@ function FrameMethods:HookScript(handler, fn)
     local old = self.__scripts[handler]
     self.__scripts[handler] = function(...) if old then old(...) end fn(...) end
 end
-function FrameMethods:RegisterEvent(event)       self.__events[event] = true end
-function FrameMethods:RegisterUnitEvent(event)   self.__events[event] = true end
+-- Ereignisse, die dieser Client nicht kennt. Wie im Spiel wirft der Versuch,
+-- sie anzumelden - sonst koennte kein Test den gemeldeten Fehler nachstellen.
+UNBEKANNTE_EREIGNISSE = { LEARNED_SPELL_IN_TAB = true }
+
+C_EventUtils = {
+    IsEventValid = function(event) return not UNBEKANNTE_EREIGNISSE[event] end,
+}
+
+function FrameMethods:RegisterEvent(event)
+    if UNBEKANNTE_EREIGNISSE[event] then
+        error(('Attempt to register unknown event "%s"'):format(event), 2)
+    end
+    self.__events[event] = true
+end
+function FrameMethods:RegisterUnitEvent(event)
+    if UNBEKANNTE_EREIGNISSE[event] then
+        error(('Attempt to register unknown event "%s"'):format(event), 2)
+    end
+    self.__events[event] = true
+end
 function FrameMethods:UnregisterEvent(event)     self.__events[event] = nil end
 function FrameMethods:IsEventRegistered(event)   return self.__events[event] == true end
 function FrameMethods:Fire(event, ...)

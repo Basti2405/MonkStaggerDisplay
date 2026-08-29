@@ -6,6 +6,29 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.3] – 2026-08-30
+
+### Behoben
+- **`Attempt to register unknown event "LEARNED_SPELL_IN_TAB"`.** Dieses
+  Ereignis gibt es in Midnight nicht mehr. Der Fehler warf mitten in
+  `Core:Initialize()` — und riss **alle Anmeldungen danach mit**:
+  `PLAYER_REGEN_DISABLED`, `PLAYER_REGEN_ENABLED`, die beiden
+  Cooldown-Ereignisse sowie sämtliche `UNIT_*`-Ereignisse blieben
+  unregistriert. Dass die Anzeige trotzdem lief, lag allein an der
+  `OnUpdate`-Schleife, die vorher gesetzt wird.
+
+### Geändert
+- Alle Ereignisse laufen jetzt über `ns.RegisterEventSafely`, das den Namen
+  zuvor mit `C_EventUtils.IsEventValid` prüft und zusätzlich in `pcall`
+  gekapselt ist. Ein künftig entferntes Ereignis kann die Initialisierung
+  damit nicht mehr abbrechen.
+- Das Ereignis wurde ersatzlos gestrichen statt durch
+  `LEARNED_SPELL_IN_SKILL_LINE` ersetzt: `FillSpellInfo` prüft ohnehin bei
+  jedem Durchlauf, ob die Gebräue bekannt sind.
+- Die Test-Attrappe wirft bei unbekannten Ereignissen jetzt genau wie das
+  Spiel; ein Testfall prüft, dass nach einem solchen Fehlversuch alle
+  übrigen Ereignisse trotzdem angemeldet sind.
+
 ## [1.0.2] – 2026-08-30
 
 ### Behoben
@@ -70,7 +93,8 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Eintrag im Addon-Kompartiment (Links: Optionen, Rechts: Anker sperren).
 - Test-Harness mit WoW-API-Attrappe, lauffähig außerhalb des Spiels.
 
-[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.2...HEAD
+[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.3...HEAD
+[1.0.3]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.3
 [1.0.2]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.2
 [1.0.1]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.0
