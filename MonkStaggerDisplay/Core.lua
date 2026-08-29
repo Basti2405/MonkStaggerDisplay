@@ -34,6 +34,7 @@ Core.state = {
 
 Core.isBrewmaster  = false
 Core.lastDamageTime= 0
+Core.lastStagger   = 0
 Core.lastSoundTime = 0
 Core.testMode      = false
 Core.elapsedAccum  = 0
@@ -153,6 +154,14 @@ function Core:BuildState()
     state.stagger    = stagger
     state.healthPct  = (health and maxHealth > 0) and (health / maxHealth * 100) or nil
     state.staggerPct = (maxHealth > 0) and (stagger / maxHealth * 100) or 0
+
+    -- Steigt der Stagger, ist gerade Schaden eingegangen. Das ersetzt die
+    -- Auswertung des Kampflogs: Fuer einen Braumeister ist der Stagger das
+    -- unmittelbarere Signal, und es kostet kein einziges Ereignis.
+    if stagger > (self.lastStagger or 0) then
+        self.lastDamageTime = GetTime()
+    end
+    self.lastStagger = stagger
     state.dtps       = stagger / ns.STAGGER_WINDOW
     state.level      = LevelForPercent(state.staggerPct)
     state.inCombat   = InCombatLockdown() or (UnitAffectingCombat("player") and true or false)
@@ -365,14 +374,12 @@ function Core:UpdateSpecialization()
         ns.Debug("Braumeister-Status:", tostring(self.isBrewmaster), "SpecID:", tostring(specID))
 
         if self.isBrewmaster then
-            self.frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
             -- Symbole neu laden, falls die Zauber erst jetzt bekannt sind
             if ns.Display.initialized then
                 ns.Display.purifyIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.PURIFYING_BREW))
                 ns.Display.celestialIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.CELESTIAL_BREW))
             end
         else
-            self.frame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
             if not self.testMode then
                 ns.Display:HideImmediately()
             end
@@ -395,8 +402,6 @@ function eventHandlers.ADDON_LOADED(self, loadedAddon)
 end
 
 function eventHandlers.PLAYER_LOGIN(self)
-    self.playerGUID = UnitGUID("player")
-
     ns.Display:Initialize()
     ns.Config:RegisterSettings()
     self:UpdateSpecialization()
@@ -405,7 +410,6 @@ function eventHandlers.PLAYER_LOGIN(self)
 end
 
 function eventHandlers.PLAYER_ENTERING_WORLD(self)
-    self.playerGUID = UnitGUID("player")
     self:UpdateSpecialization()
 end
 
@@ -441,21 +445,6 @@ eventHandlers.SPELL_UPDATE_COOLDOWN = eventHandlers.UNIT_HEALTH
 eventHandlers.SPELL_UPDATE_CHARGES  = eventHandlers.UNIT_HEALTH
 eventHandlers.UNIT_ENTERED_VEHICLE  = eventHandlers.UNIT_HEALTH
 eventHandlers.UNIT_EXITED_VEHICLE   = eventHandlers.UNIT_HEALTH
-
-function eventHandlers.COMBAT_LOG_EVENT_UNFILTERED(self)
-    local _, subevent, _, _, _, _, _, destGUID = CombatLogGetCurrentEventInfo()
-    if destGUID ~= self.playerGUID then return end
-    if not string.find(subevent, "_DAMAGE", 1, true) then return end
-
-    self.lastDamageTime = GetTime()
-
-    -- Eingehender Schaden blendet die Anzeige sofort ein
-    if self.isBrewmaster and ns.db.enabled and ns.db.locked and not self.testMode then
-        if (ns.Display.currentAlpha or 0) < 0.5 then
-            ns.Display:SetTargetAlpha(ns.db.visibility.alphaInCombat, true)
-        end
-    end
-end
 
 --==========================================================================
 -- 7. Slash-Befehle

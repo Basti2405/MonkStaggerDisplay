@@ -193,6 +193,50 @@ local ok2, err2 = pcall(function() ns.Core:Refresh(true) end)
 check("Refresh ohne Braumeister bleibt fehlerfrei", ok2, ok2 and "" or tostring(err2))
 ns.Core.isBrewmaster = vorher
 
+print("\n== Geschützte Aufrufe (ADDON_ACTION_FORBIDDEN) ==")
+-- Gemeldet aus dem Spiel: RegisterEvent aus UpdateSpecialization heraus ist
+-- verboten, weil PLAYER_SPECIALIZATION_CHANGED aus geschütztem Kontext feuert.
+-- Alle Registrierungen müssen deshalb beim Laden erfolgen, nicht später.
+local function ereignismenge()
+    local liste = {}
+    for e in pairs(core.__events) do liste[#liste+1] = e end
+    table.sort(liste)
+    return table.concat(liste, ",")
+end
+
+check("COMBAT_LOG_EVENT_UNFILTERED wird nicht registriert",
+      core.__events["COMBAT_LOG_EVENT_UNFILTERED"] == nil)
+
+local ereignisseVorher = ereignismenge()
+ns.Core.isBrewmaster = false
+ns.Core:UpdateSpecialization()          -- Wechsel nach Braumeister
+ns.Core.isBrewmaster = true
+ns.Core:UpdateSpecialization()          -- und wieder zurück
+check("UpdateSpecialization registriert keine Ereignisse nach",
+      ereignismenge() == ereignisseVorher, "")
+
+print("\n== Schadenserkennung ohne Kampflog ==")
+ns.Core.lastStagger = 0
+ns.Core.lastDamageTime = 0
+UnitStagger = function() return 0 end
+ns.Core:BuildState()
+check("kein Stagger -> kein Schadenszeitpunkt", ns.Core.lastDamageTime == 0)
+
+UnitStagger = function() return 120000 end
+ns.Core:BuildState()
+local nachAnstieg = ns.Core.lastDamageTime
+check("Stagger-Anstieg setzt den Schadenszeitpunkt", nachAnstieg > 0)
+
+UnitStagger = function() return 90000 end     -- faellt ab: kein neuer Schaden
+ns.Core:BuildState()
+check("fallender Stagger setzt ihn nicht erneut",
+      ns.Core.lastDamageTime == nachAnstieg)
+
+UnitStagger = function() return 200000 end    -- steigt wieder
+ns.Core:BuildState()
+check("erneuter Anstieg setzt ihn wieder", ns.Core.lastDamageTime > nachAnstieg)
+UnitStagger = function() return 450000 end
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")

@@ -6,6 +6,25 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.2] – 2026-08-30
+
+### Behoben
+- **`ADDON_ACTION_FORBIDDEN` beim Spezialisierungswechsel.** Das Addon meldete
+  `COMBAT_LOG_EVENT_UNFILTERED` dynamisch an — aus `UpdateSpecialization`
+  heraus, also aus einem Ereignis-Handler. `PLAYER_SPECIALIZATION_CHANGED`
+  feuert aber aus geschütztem Kontext, und dort ist `RegisterEvent` aus
+  Addon-Code verboten. Etablierte Addons (Details, WeakAuras) registrieren
+  dieses Ereignis ausschließlich beim Laden.
+
+### Geändert
+- **Der Kampflog wird gar nicht mehr ausgewertet.** Eingehender Schaden wird
+  jetzt am Anstieg des Staggers erkannt. Für einen Braumeister ist das das
+  unmittelbarere Signal, es kostet kein einziges Ereignis, und die
+  hochfrequenteste Ereignisquelle des Spiels entfällt vollständig.
+- Sämtliche Ereignisanmeldungen erfolgen nur noch in `Core:Initialize()`,
+  also beim Laden und außerhalb jedes geschützten Kontexts.
+- `playerGUID` entfernt — es diente allein der Kampflog-Auswertung.
+
 ## [1.0.1] – 2026-08-29
 
 ### Behoben
@@ -51,6 +70,7 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Eintrag im Addon-Kompartiment (Links: Optionen, Rechts: Anker sperren).
 - Test-Harness mit WoW-API-Attrappe, lauffähig außerhalb des Spiels.
 
-[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.1...HEAD
+[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.2...HEAD
+[1.0.2]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.2
 [1.0.1]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.0
