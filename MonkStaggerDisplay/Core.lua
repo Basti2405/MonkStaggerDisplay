@@ -141,14 +141,17 @@ function Core:BuildState()
         return state
     end
 
-    local maxHealth = UnitHealthMax("player") or 0
-    local health    = UnitHealth("player") or 0
-    local stagger   = (UnitStagger and UnitStagger("player")) or 0
+    -- Ab Midnight (12.0) kann UnitHealth einen gesperrten Wert liefern, mit
+    -- dem nicht gerechnet werden darf. SafeNumber gibt dann nil zurueck, und
+    -- healthPct bleibt nil - also ausdruecklich "unbekannt" statt "null".
+    local maxHealth = ns.SafeNumber(UnitHealthMax("player")) or 0
+    local health    = ns.SafeNumber(UnitHealth("player"))
+    local stagger   = ns.SafeNumber(UnitStagger and UnitStagger("player")) or 0
 
     state.maxHealth  = maxHealth
     state.health     = health
     state.stagger    = stagger
-    state.healthPct  = (maxHealth > 0) and (health / maxHealth * 100) or 100
+    state.healthPct  = (health and maxHealth > 0) and (health / maxHealth * 100) or nil
     state.staggerPct = (maxHealth > 0) and (stagger / maxHealth * 100) or 0
     state.dtps       = stagger / ns.STAGGER_WINDOW
     state.level      = LevelForPercent(state.staggerPct)
@@ -205,7 +208,9 @@ function Core:EvaluateRecommendations(state)
         local hasCharge = (purify.charges or 0) >= 1
 
         if hasCharge and state.staggerPct > 0 then
-            if state.healthPct <= cfg.emergencyHealthPct
+            -- Ist das Leben nicht lesbar, faellt der Notfallpfad aus. Lieber
+            -- keine Empfehlung als eine auf geratenen Werten.
+            if state.healthPct and state.healthPct <= cfg.emergencyHealthPct
                and state.staggerPct >= ns.db.thresholds.light then
                 rec.purify       = true
                 rec.purifyReason = string.format("Notfall – Läutern (%.0f%% Leben)", state.healthPct)
@@ -238,7 +243,7 @@ function Core:EvaluateRecommendations(state)
             rec.celestial       = true
             rec.celestialReason = string.format("Schild maximal (%d Stapel Geläutertes Chi)",
                                                 state.purifiedChi)
-        elseif state.healthPct <= cfg.celestialEmergencyHealthPct then
+        elseif state.healthPct and state.healthPct <= cfg.celestialEmergencyHealthPct then
             rec.celestial       = true
             rec.celestialReason = string.format("Notfall – Schild (%.0f%% Leben)", state.healthPct)
         end
@@ -293,6 +298,13 @@ end
 
 function Core:Refresh(instant)
     if not ns.Display or not ns.Display.initialized then return end
+
+    -- Ausserhalb der Braumeister-Spezialisierung gibt es nichts zu berechnen.
+    -- Ausblenden genuegt; die Unit-Abfragen bleiben dann ganz aus.
+    if not self.isBrewmaster and not self.testMode then
+        ns.Display:SetTargetAlpha(0, instant)
+        return
+    end
 
     local state = self:BuildState()
     ns.Display:Update(state)

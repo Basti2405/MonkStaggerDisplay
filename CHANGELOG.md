@@ -6,6 +6,30 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.1] – 2026-08-29
+
+### Behoben
+- **Lua-Fehler bei jedem Aktualisierungslauf** (2469 Auslösungen in einer
+  Sitzung gemeldet): `Core.lua:151: attempt to perform arithmetic on local
+  'health' (a secret number value)`. Seit Midnight (12.0) liefert
+  `UnitHealth("player")` einen gesperrten Wert, mit dem ein getaintetes Addon
+  nicht rechnen darf; `UnitHealthMax` bleibt dagegen eine normale Zahl.
+  Alle Unit-Werte laufen jetzt durch `ns.SafeNumber`, das gesperrte Werte
+  über `issecretvalue` erkennt und `nil` zurückgibt.
+- `Refresh` fragt außerhalb der Braumeister-Spezialisierung keine Unit-Werte
+  mehr ab, sondern blendet nur noch aus. Der gemeldete Fehler trat auch bei
+  `isBrewmaster = false` auf, weil `UpdateSpecialization` den Zustand
+  trotzdem neu aufgebaut hat.
+
+### Geändert
+- Ist das Leben nicht lesbar, bleibt `healthPct` **nil** statt auf 100 zu
+  raten. Die beiden Notfallpfade der Empfehlungs-Engine (Läutern und Schild
+  unterhalb einer Lebensschwelle) lösen dann nicht aus. Stagger-Anzeige,
+  Schwellenfarben und die übrigen Empfehlungen arbeiten unverändert weiter.
+- Der Testlauf bildet gesperrte Werte jetzt als Objekte nach, deren
+  Rechenoperationen denselben Fehler werfen wie im Spiel — sonst hätte der
+  Test den Fehler nicht reproduzieren können.
+
 ## [1.0.0] – 2026-08-29
 
 ### Hinzugefügt
@@ -27,5 +51,6 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Eintrag im Addon-Kompartiment (Links: Optionen, Rechts: Anker sperren).
 - Test-Harness mit WoW-API-Attrappe, lauffähig außerhalb des Spiels.
 
-[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.0...HEAD
+[Unveröffentlicht]: https://github.com/Basti2405/MonkStaggerDisplay/compare/v1.0.1...HEAD
+[1.0.1]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.1
 [1.0.0]: https://github.com/Basti2405/MonkStaggerDisplay/releases/tag/v1.0.0

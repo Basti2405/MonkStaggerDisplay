@@ -139,6 +139,31 @@ function ns.GetPlayerAuraStacks(spellID)
     return 0, nil
 end
 
+--- Gesperrte Werte ("secret values", ab Midnight/12.0)
+--- ------------------------------------------------------------------------
+--- Blizzard versieht seit 12.0 bestimmte Unit-Werte mit einem Sperrvermerk.
+--- Ein getaintetes Addon darf sie weder in die Oberflaeche schreiben noch
+--- damit rechnen - jeder Rechenversuch wirft einen Lua-Fehler. Betroffen ist
+--- unter anderem UnitHealth("player"), waehrend UnitHealthMax weiterhin eine
+--- normale Zahl liefert. Die Prueffunktion existiert in aelteren Clients
+--- nicht, deshalb der Zugriff ueber _G.
+local issecretvalue = _G.issecretvalue
+
+function ns.IsSecret(value)
+    if not issecretvalue then return false end
+    local ok, result = pcall(issecretvalue, value)
+    return ok and result or false
+end
+
+--- Liefert den Wert als Zahl, oder nil wenn er gesperrt bzw. keine Zahl ist.
+--- Damit laesst sich an der Aufrufstelle sauber zwischen "null" und
+--- "nicht lesbar" unterscheiden, statt blind mit 0 weiterzurechnen.
+function ns.SafeNumber(value)
+    if type(value) ~= "number" then return nil end
+    if ns.IsSecret(value) then return nil end
+    return value
+end
+
 --- Zahlen kompakt formatieren (1.2k / 3.4M).
 function ns.FormatNumber(value)
     value = value or 0

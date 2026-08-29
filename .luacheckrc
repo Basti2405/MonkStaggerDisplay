@@ -17,6 +17,7 @@ read_globals = {
     "UnitClass", "UnitGUID", "UnitHealth", "UnitHealthMax", "UnitStagger",
     "UnitAffectingCombat", "UnitInVehicle", "UnitHasVehicleUI",
     "CombatLogGetCurrentEventInfo", "IsPlayerSpell", "PlaySound",
+    "issecretvalue",
     "GetSpecialization", "GetSpecializationInfo", "GetSpellCooldown",
     "GetSpellCharges", "GetSpellTexture",
 
@@ -53,4 +54,5 @@ globals = {
 -- Der Testlauf ersetzt absichtlich API-Funktionen, um Szenarien zu erzeugen.
 files["tests/run_tests.lua"] = {
     globals = { "UnitStagger", "UnitHealth", "UnitHealthMax", "UnitAffectingCombat" },
+    read_globals = { "MarkSecret", "issecretvalue" },
 }

@@ -146,6 +146,53 @@ check("Handler aufrufbar", pcall(function()
     MonkStaggerDisplay_OnAddonCompartmentLeave()
 end))
 
+print("\n== Gesperrte Werte (Midnight 12.0) ==")
+-- Nachstellung des gemeldeten Fehlers: UnitHealth liefert einen gesperrten
+-- Wert, UnitHealthMax bleibt eine normale Zahl.
+local geheim = MarkSecret(420000)
+UnitHealth = function() return geheim end
+check("issecretvalue erkennt den Wert", issecretvalue(geheim) == true)
+-- Nachweis, dass die Attrappe den Fehler wirklich nachstellt: ohne Schutz
+-- muss die Rechnung aus der alten Fassung scheitern.
+local wirft = not pcall(function() return geheim / 566900 * 100 end)
+check("Rechnen auf dem gesperrten Wert wirft (wie im Spiel)", wirft)
+check("SafeNumber liefert dafür nil", ns.SafeNumber(geheim) == nil)
+check("SafeNumber lässt normale Zahlen durch", ns.SafeNumber(566900) == 566900)
+
+local okBuild, errBuild = pcall(function() ns.Core:BuildState() end)
+check("BuildState wirft keinen Fehler mehr", okBuild, okBuild and "" or tostring(errBuild))
+check("healthPct ist unbekannt statt geraten", ns.Core.state.healthPct == nil)
+check("Stagger wird weiter berechnet", ns.Core.state.staggerPct > 0,
+      string.format("%.1f%%", ns.Core.state.staggerPct))
+
+-- Notfallpfade dürfen bei unbekanntem Leben nicht auslösen
+ns.db.recommend.emergencyHealthPct = 100
+ns.db.recommend.celestialEmergencyHealthPct = 100
+UnitStagger = function() return 50000 end          -- niedrig: nur Notfall käme infrage
+ns.Core:BuildState()
+check("kein Notfall-Läutern bei unbekanntem Leben",
+      not string.find(tostring(ns.Core.state.rec.purifyReason or ""), "Notfall"))
+check("kein Notfall-Schild bei unbekanntem Leben",
+      not string.find(tostring(ns.Core.state.rec.celestialReason or ""), "Notfall"))
+
+-- Mit lesbarem Leben muss der Notfall wieder greifen
+UnitHealth = function() return 100000 end
+UnitStagger = function() return 350000 end
+ns.Core:BuildState()
+check("mit lesbarem Leben greift der Notfall wieder",
+      ns.Core.state.rec.purify == true, tostring(ns.Core.state.rec.purifyReason))
+ns.db.recommend.emergencyHealthPct = 40
+ns.db.recommend.celestialEmergencyHealthPct = 50
+UnitHealth = function() return 620000 end
+UnitStagger = function() return 450000 end
+
+print("\n== Refresh außerhalb der Spezialisierung ==")
+local vorher = ns.Core.isBrewmaster
+ns.Core.isBrewmaster = false
+local ok2, err2 = pcall(function() ns.Core:Refresh(true) end)
+check("Refresh ohne Braumeister bleibt fehlerfrei", ok2, ok2 and "" or tostring(err2))
+ns.Core.isBrewmaster = vorher
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")

@@ -135,6 +135,35 @@ function CombatLogGetCurrentEventInfo()
     return 0, "SPELL_DAMAGE", false, "Creature-1", "Boss", 0, 0, "Player-1234-ABCDEF"
 end
 
+-- Gesperrte Werte ab Midnight (12.0).
+--
+-- Wichtig fuer die Aussagekraft des Tests: Ein gesperrter Wert wird hier NICHT
+-- als normale Zahl nachgebildet, sondern als Objekt, dessen Rechenoperationen
+-- denselben Fehler werfen wie im Spiel. Sonst wuerde der Test den gemeldeten
+-- Fehler gar nicht reproduzieren koennen.
+local gesperrt = {}
+local function sperrfehler()
+    error("attempt to perform arithmetic on a secret number value, "
+       .. "while execution tainted by 'MonkStaggerDisplay'", 2)
+end
+gesperrt.__index    = gesperrt
+gesperrt.__add      = sperrfehler
+gesperrt.__sub      = sperrfehler
+gesperrt.__mul      = sperrfehler
+gesperrt.__div      = sperrfehler
+gesperrt.__unm      = sperrfehler
+gesperrt.__lt       = sperrfehler
+gesperrt.__le       = sperrfehler
+gesperrt.__tostring = function() return "<secret number>" end
+
+function issecretvalue(v)
+    return type(v) == "table" and getmetatable(v) == gesperrt
+end
+
+function MarkSecret(zahl)
+    return setmetatable({ wert = zahl }, gesperrt)
+end
+
 function wipe(t) for k in pairs(t) do t[k] = nil end return t end
 function strtrim(s) return (string.gsub(s, "^%s*(.-)%s*$", "%1")) end
 function tostringall(...)
