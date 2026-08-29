@@ -1,0 +1,597 @@
+--[[--------------------------------------------------------------------------
+    Monk Stagger Display -- Core.lua
+
+    Herzstueck des Addons:
+      * Ereignisverarbeitung und Spezialisierungspruefung (Braumeister, 268)
+      * Zustandsermittlung (Stagger, Leben, Gebraeu-Abklingzeiten, Auren)
+      * Empfehlungs-Engine fuer Laeuterndes / Himmlisches Gebraeu
+      * Sichtbarkeitssteuerung (Kampf, eingehender Schaden, Ruhezustand)
+      * Slash-Befehle /msd und /stagger
+----------------------------------------------------------------------------]]
+
+local addonName, ns = ...
+
+local Core = {}
+ns.Core = Core
+
+local UPDATE_INTERVAL = 0.05   -- Aktualisierungstakt der Anzeige
+local GCD_THRESHOLD   = 1.5    -- Abklingzeiten bis hierher sind die globale Abklingzeit
+
+Core.state = {
+    stagger    = 0,
+    staggerPct = 0,
+    dtps       = 0,
+    health     = 0,
+    healthPct  = 100,
+    maxHealth  = 0,
+    level      = 1,
+    inCombat   = false,
+    purifiedChi= 0,
+    purify     = {},
+    celestial  = {},
+    rec        = {},
+}
+
+Core.isBrewmaster  = false
+Core.lastDamageTime= 0
+Core.lastSoundTime = 0
+Core.testMode      = false
+Core.elapsedAccum  = 0
+
+--==========================================================================
+-- 1. Zustandsermittlung
+--==========================================================================
+
+--- Fuellt eine Tabelle mit Abklingzeit- und Ladungsinformationen eines Zaubers.
+local function FillSpellInfo(info, spellID)
+    wipe(info)
+    info.spellID = spellID
+    info.known   = ns.IsSpellAvailable(spellID)
+    if not info.known then return info end
+
+    local now = GetTime()
+    local start, duration, enabled = ns.GetSpellCooldownInfo(spellID)
+    info.start, info.duration, info.enabled = start, duration, enabled
+
+    local charges, maxCharges, chargeStart, chargeDuration = ns.GetSpellChargeInfo(spellID)
+    if charges and maxCharges then
+        info.charges        = charges
+        info.maxCharges     = maxCharges
+        info.chargeStart    = chargeStart
+        info.chargeDuration = chargeDuration
+        if charges < maxCharges and chargeDuration and chargeDuration > 0 then
+            info.timeToNextCharge = math.max((chargeStart + chargeDuration) - now, 0)
+        else
+            info.timeToNextCharge = 0
+        end
+    else
+        -- Zauber ohne Ladungssystem als 0/1 Ladungen abbilden
+        info.maxCharges = 1
+        local remaining = 0
+        if start and start > 0 and duration and duration > GCD_THRESHOLD then
+            remaining = math.max((start + duration) - now, 0)
+        end
+        info.charges          = (remaining > 0) and 0 or 1
+        info.timeToNextCharge = remaining
+    end
+
+    info.ready = (info.charges or 0) >= 1
+    return info
+end
+
+--- Ordnet einen Stagger-Prozentwert einer der drei Stufen zu.
+local function LevelForPercent(percent)
+    local thresholds = ns.db.thresholds
+    if percent >= thresholds.medium then return ns.LEVEL.HEAVY end
+    if percent >= thresholds.light  then return ns.LEVEL.MEDIUM end
+    return ns.LEVEL.LIGHT
+end
+
+--- Werte fuer die Testanzeige erzeugen (sinusfoermiger Stagger-Verlauf).
+function Core:BuildTestState(state)
+    local maxHealth = math.max(UnitHealthMax("player") or 0, 1000000)
+    local cycle     = (GetTime() % 12) / 12
+    local wave      = (1 - math.cos(cycle * 2 * math.pi)) / 2   -- 0 .. 1 .. 0
+
+    state.maxHealth  = maxHealth
+    state.health     = maxHealth * (1 - wave * 0.55)
+    state.stagger    = maxHealth * wave * (ns.db.bar.maxPct / 100)
+    state.healthPct  = state.health / maxHealth * 100
+    state.staggerPct = state.stagger / maxHealth * 100
+    state.dtps       = state.stagger / ns.STAGGER_WINDOW
+    state.level      = LevelForPercent(state.staggerPct)
+    state.inCombat   = true
+    state.purifiedChi= math.floor(wave * 6)
+
+    local now = GetTime()
+    wipe(state.purify)
+    state.purify.known      = true
+    state.purify.charges    = (wave > 0.5) and 2 or 1
+    state.purify.maxCharges = 2
+    state.purify.chargeStart    = now - (cycle * 15)
+    state.purify.chargeDuration = 15
+    state.purify.timeToNextCharge = 15 - (cycle * 15)
+    state.purify.ready      = true
+
+    wipe(state.celestial)
+    state.celestial.known      = true
+    state.celestial.charges    = 1
+    state.celestial.maxCharges = 1
+    state.celestial.ready      = true
+    state.celestial.start      = 0
+    state.celestial.duration   = 0
+
+    wipe(state.rec)
+    if state.staggerPct >= ns.db.thresholds.medium then
+        state.rec.purify       = true
+        state.rec.purifyReason = "Testmodus: Läutern empfohlen"
+    end
+    if state.purifiedChi >= ns.db.recommend.celestialMinStacks then
+        state.rec.celestial       = true
+        state.rec.celestialReason = "Testmodus: Schild optimal"
+    end
+end
+
+--- Sammelt alle relevanten Werte im wiederverwendeten Zustandsobjekt.
+function Core:BuildState()
+    local state = self.state
+
+    if self.testMode then
+        self:BuildTestState(state)
+        return state
+    end
+
+    local maxHealth = UnitHealthMax("player") or 0
+    local health    = UnitHealth("player") or 0
+    local stagger   = (UnitStagger and UnitStagger("player")) or 0
+
+    state.maxHealth  = maxHealth
+    state.health     = health
+    state.stagger    = stagger
+    state.healthPct  = (maxHealth > 0) and (health / maxHealth * 100) or 100
+    state.staggerPct = (maxHealth > 0) and (stagger / maxHealth * 100) or 0
+    state.dtps       = stagger / ns.STAGGER_WINDOW
+    state.level      = LevelForPercent(state.staggerPct)
+    state.inCombat   = InCombatLockdown() or (UnitAffectingCombat("player") and true or false)
+    state.purifiedChi= ns.GetPlayerAuraStacks(ns.SPELL.PURIFIED_CHI)
+
+    FillSpellInfo(state.purify,    ns.SPELL.PURIFYING_BREW)
+    FillSpellInfo(state.celestial, ns.SPELL.CELESTIAL_BREW)
+
+    self:EvaluateRecommendations(state)
+    return state
+end
+
+--==========================================================================
+-- 2. Empfehlungs-Engine
+--==========================================================================
+
+--[[
+    Bewertet, wann der Einsatz von Laeuterndem bzw. Himmlischem Gebraeu den
+    groessten defensiven Wert hat. Alle Schwellen sind konfigurierbar, damit
+    die Heuristik an Spielstil und Balanceaenderungen angepasst werden kann.
+
+    Laeuterndes Gebraeu wird empfohlen, wenn ...
+      a) Notfall: Leben unter der Notfallschwelle und ueberhaupt Stagger aktiv
+      b) Regulaer: Stagger ueber der Schwelle UND die Laeuterung entfernt
+         mindestens den konfigurierten Mindestwert (in % max. Leben)
+      c) Ladungsschutz: eine Ladung wuerde gleich verfallen und die Laeuterung
+         waere trotzdem noch spuerbar
+
+    Himmlisches Gebraeu wird empfohlen, wenn ...
+      a) genug Stapel "Geläutertes Chi" fuer einen maximalen Schild vorliegen
+      b) das Leben unter die Notfallschwelle faellt
+]]
+function Core:EvaluateRecommendations(state)
+    local rec = state.rec
+    wipe(rec)
+
+    local cfg = ns.db.recommend
+    if not cfg.enabled then return rec end
+
+    local maxHealth = state.maxHealth
+    if maxHealth <= 0 then return rec end
+
+    ------------------------------------------------------------------
+    -- Läuterndes Gebräu
+    ------------------------------------------------------------------
+    local purify = state.purify
+    if purify.known then
+        local removed  = state.stagger * (cfg.purifyRemovalPct / 100)
+        local gainPct  = removed / maxHealth * 100
+        state.purifyValue    = removed
+        state.purifyValuePct = gainPct
+
+        local hasCharge = (purify.charges or 0) >= 1
+
+        if hasCharge and state.staggerPct > 0 then
+            if state.healthPct <= cfg.emergencyHealthPct
+               and state.staggerPct >= ns.db.thresholds.light then
+                rec.purify       = true
+                rec.purifyReason = string.format("Notfall – Läutern (%.0f%% Leben)", state.healthPct)
+
+            elseif state.staggerPct >= cfg.purifyThresholdPct
+                   and gainPct >= cfg.purifyMinGainPct then
+                rec.purify       = true
+                rec.purifyReason = string.format("Läutern entfernt %s (%.1f%% Leben)",
+                                                 ns.FormatNumber(removed), gainPct)
+
+            elseif cfg.capProtection and gainPct >= (cfg.purifyMinGainPct * 0.5) then
+                local maxCharges = purify.maxCharges or 1
+                local atCap      = (purify.charges or 0) >= maxCharges
+                local nearCap    = (purify.charges or 0) >= (maxCharges - 1)
+                                   and (purify.timeToNextCharge or 99) <= cfg.capProtectionWindow
+                if maxCharges > 1 and (atCap or nearCap) then
+                    rec.purify       = true
+                    rec.purifyReason = "Ladung läuft über – jetzt läutern"
+                end
+            end
+        end
+    end
+
+    ------------------------------------------------------------------
+    -- Himmlisches Gebräu
+    ------------------------------------------------------------------
+    local celestial = state.celestial
+    if cfg.celestialEnabled and celestial.known and celestial.ready then
+        if state.purifiedChi >= cfg.celestialMinStacks then
+            rec.celestial       = true
+            rec.celestialReason = string.format("Schild maximal (%d Stapel Geläutertes Chi)",
+                                                state.purifiedChi)
+        elseif state.healthPct <= cfg.celestialEmergencyHealthPct then
+            rec.celestial       = true
+            rec.celestialReason = string.format("Notfall – Schild (%.0f%% Leben)", state.healthPct)
+        end
+    end
+
+    return rec
+end
+
+--==========================================================================
+-- 3. Sichtbarkeit
+--==========================================================================
+
+function Core:UpdateVisibility(state, instant)
+    local db = ns.db
+
+    -- Nicht Braumeister oder Addon deaktiviert -> komplett aus
+    if not self.isBrewmaster or not db.enabled then
+        ns.Display:SetTargetAlpha(0, instant)
+        return
+    end
+
+    -- Entsperrter Anker oder Testmodus -> immer sichtbar
+    if not db.locked or self.testMode then
+        ns.Display:SetTargetAlpha(1, true)
+        return
+    end
+
+    local visibility = db.visibility
+
+    if visibility.hideInVehicle and (UnitInVehicle("player") or UnitHasVehicleUI("player")) then
+        ns.Display:SetTargetAlpha(0, instant)
+        return
+    end
+
+    local recentDamage = (GetTime() - (self.lastDamageTime or 0)) <= (visibility.damageGrace or 0)
+    local active = state.inCombat
+                   or (visibility.showWhenStaggered and state.stagger > 0)
+                   or recentDamage
+
+    if active then
+        ns.Display:SetTargetAlpha(visibility.alphaInCombat, instant)
+    else
+        -- "Außerhalb des Kampfes ausblenden" erzwingt volle Transparenz
+        local idle = visibility.hideOutOfCombat and 0 or (visibility.alphaIdle or 0)
+        ns.Display:SetTargetAlpha(idle, instant)
+    end
+end
+
+--==========================================================================
+-- 4. Aktualisierungsschleife
+--==========================================================================
+
+function Core:Refresh(instant)
+    if not ns.Display or not ns.Display.initialized then return end
+
+    local state = self:BuildState()
+    ns.Display:Update(state)
+    self:UpdateVisibility(state, instant)
+    self:PlayRecommendationSound(state)
+end
+
+function Core:ForceUpdate()
+    self:Refresh(false)
+end
+
+function Core:PlayRecommendationSound(state)
+    local cfg = ns.db.recommend
+    if not (cfg.enabled and cfg.sound) then return end
+    if not (state.rec.purify or state.rec.celestial) then
+        self.recActive = false
+        return
+    end
+    if self.recActive then return end
+
+    local now = GetTime()
+    if (now - (self.lastSoundTime or 0)) < (cfg.soundThrottle or 3) then return end
+
+    self.recActive     = true
+    self.lastSoundTime = now
+    if PlaySound then
+        PlaySound(cfg.soundKit or 8959, "Master")
+    end
+end
+
+local function OnUpdate(_, elapsed)
+    Core.elapsedAccum = Core.elapsedAccum + elapsed
+
+    -- Weiches Ein-/Ausblenden laeuft in voller Bildrate
+    if ns.Display and ns.Display.initialized then
+        ns.Display:OnFadeUpdate(elapsed)
+    end
+
+    if Core.elapsedAccum < UPDATE_INTERVAL then return end
+    Core.elapsedAccum = 0
+
+    if not Core.isBrewmaster and not Core.testMode then return end
+    Core:Refresh(false)
+end
+
+--==========================================================================
+-- 5. Spezialisierung
+--==========================================================================
+
+function Core:UpdateSpecialization()
+    local _, class = UnitClass("player")
+    local specID   = ns.GetPlayerSpecID()
+    local wasBrewmaster = self.isBrewmaster
+
+    self.isBrewmaster = (class == "MONK") and (specID == ns.SPEC_ID_BREWMASTER)
+
+    if self.isBrewmaster ~= wasBrewmaster then
+        ns.Debug("Braumeister-Status:", tostring(self.isBrewmaster), "SpecID:", tostring(specID))
+
+        if self.isBrewmaster then
+            self.frame:RegisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+            -- Symbole neu laden, falls die Zauber erst jetzt bekannt sind
+            if ns.Display.initialized then
+                ns.Display.purifyIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.PURIFYING_BREW))
+                ns.Display.celestialIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.CELESTIAL_BREW))
+            end
+        else
+            self.frame:UnregisterEvent("COMBAT_LOG_EVENT_UNFILTERED")
+            if not self.testMode then
+                ns.Display:HideImmediately()
+            end
+        end
+    end
+
+    self:Refresh(true)
+end
+
+--==========================================================================
+-- 6. Ereignisse
+--==========================================================================
+
+local eventHandlers = {}
+
+function eventHandlers.ADDON_LOADED(self, loadedAddon)
+    if loadedAddon ~= addonName then return end
+    ns.Config:Initialize()
+    ns.Debug("SavedVariables geladen.")
+end
+
+function eventHandlers.PLAYER_LOGIN(self)
+    self.playerGUID = UnitGUID("player")
+
+    ns.Display:Initialize()
+    ns.Config:RegisterSettings()
+    self:UpdateSpecialization()
+
+    ns.Print(string.format("v%s geladen. |cff00ff96/msd|r öffnet die Einstellungen.", ns.VERSION))
+end
+
+function eventHandlers.PLAYER_ENTERING_WORLD(self)
+    self.playerGUID = UnitGUID("player")
+    self:UpdateSpecialization()
+end
+
+function eventHandlers.PLAYER_SPECIALIZATION_CHANGED(self, unit)
+    if unit and unit ~= "player" then return end
+    self:UpdateSpecialization()
+end
+
+eventHandlers.PLAYER_TALENT_UPDATE   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
+eventHandlers.TRAIT_CONFIG_UPDATED   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
+eventHandlers.LEARNED_SPELL_IN_TAB   = eventHandlers.PLAYER_SPECIALIZATION_CHANGED
+
+function eventHandlers.PLAYER_REGEN_DISABLED(self)
+    -- Kampfbeginn: sofort einblenden, kein Fade
+    self.lastDamageTime = GetTime()
+    if self.isBrewmaster and ns.db.enabled then
+        ns.Display:SetTargetAlpha(ns.db.visibility.alphaInCombat, true)
+    end
+    self:Refresh(true)
+end
+
+function eventHandlers.PLAYER_REGEN_ENABLED(self)
+    self:Refresh(false)
+end
+
+function eventHandlers.UNIT_HEALTH(self)
+    self:Refresh(false)
+end
+
+eventHandlers.UNIT_MAXHEALTH        = eventHandlers.UNIT_HEALTH
+eventHandlers.UNIT_AURA             = eventHandlers.UNIT_HEALTH
+eventHandlers.SPELL_UPDATE_COOLDOWN = eventHandlers.UNIT_HEALTH
+eventHandlers.SPELL_UPDATE_CHARGES  = eventHandlers.UNIT_HEALTH
+eventHandlers.UNIT_ENTERED_VEHICLE  = eventHandlers.UNIT_HEALTH
+eventHandlers.UNIT_EXITED_VEHICLE   = eventHandlers.UNIT_HEALTH
+
+function eventHandlers.COMBAT_LOG_EVENT_UNFILTERED(self)
+    local _, subevent, _, _, _, _, _, destGUID = CombatLogGetCurrentEventInfo()
+    if destGUID ~= self.playerGUID then return end
+    if not string.find(subevent, "_DAMAGE", 1, true) then return end
+
+    self.lastDamageTime = GetTime()
+
+    -- Eingehender Schaden blendet die Anzeige sofort ein
+    if self.isBrewmaster and ns.db.enabled and ns.db.locked and not self.testMode then
+        if (ns.Display.currentAlpha or 0) < 0.5 then
+            ns.Display:SetTargetAlpha(ns.db.visibility.alphaInCombat, true)
+        end
+    end
+end
+
+--==========================================================================
+-- 7. Slash-Befehle
+--==========================================================================
+
+function Core:ToggleTestMode()
+    self.testMode = not self.testMode
+    if self.testMode then
+        ns.Print("Testanzeige |cff55ff55aktiv|r – erneut aufrufen zum Beenden.")
+        ns.Display:SetTargetAlpha(1, true)
+    else
+        ns.Print("Testanzeige |cffff5555beendet|r.")
+        wipe(self.state.rec)
+    end
+    self:Refresh(true)
+end
+
+function Core:ToggleEnabled()
+    ns.db.enabled = not ns.db.enabled
+    ns.Print(ns.db.enabled and "Anzeige |cff55ff55aktiviert|r." or "Anzeige |cffff5555deaktiviert|r.")
+    self:Refresh(true)
+end
+
+function Core:PrintStatus()
+    local state = self.state
+    ns.Print("Status:")
+    print("  Braumeister: " .. (self.isBrewmaster and "|cff55ff55ja|r" or "|cffff5555nein|r"))
+    print("  Aktiviert:   " .. (ns.db.enabled and "ja" or "nein"))
+    print("  Anker:       " .. (ns.db.locked and "gesperrt" or "entsperrt"))
+    print(string.format("  Stagger:     %s (%.1f%% max. Leben, %s/s)",
+        ns.FormatNumber(state.stagger), state.staggerPct, ns.FormatNumber(state.dtps)))
+    print(string.format("  Schwellen:   Leicht < %d%% | Mittel < %d%% | Schwer ab %d%%",
+        ns.db.thresholds.light, ns.db.thresholds.medium, ns.db.thresholds.medium))
+    print(string.format("  Position:    %s  x=%d  y=%d",
+        ns.db.position.point, ns.db.position.x, ns.db.position.y))
+end
+
+local function PrintHelp()
+    ns.Print("Befehle (|cff00ff96/msd|r oder |cff00ff96/stagger|r):")
+    print("  |cffffff00/msd|r              – Einstellungen öffnen")
+    print("  |cffffff00/msd lock|r         – Ankerrahmen sperren")
+    print("  |cffffff00/msd unlock|r       – Ankerrahmen zum Verschieben freigeben")
+    print("  |cffffff00/msd toggle|r       – Sperre umschalten")
+    print("  |cffffff00/msd test|r         – Testanzeige ein-/ausschalten")
+    print("  |cffffff00/msd on|off|r       – Anzeige aktivieren/deaktivieren")
+    print("  |cffffff00/msd reset|r        – Position zurücksetzen")
+    print("  |cffffff00/msd resetall|r     – Alle Einstellungen zurücksetzen")
+    print("  |cffffff00/msd status|r       – Aktuellen Zustand ausgeben")
+    print("  |cffffff00/msd debug|r        – Debug-Ausgaben umschalten")
+end
+
+local function HandleSlash(input)
+    input = string.lower(strtrim(input or ""))
+    local command = string.match(input, "^(%S*)")
+
+    if command == "" or command == "config" or command == "options" then
+        ns.Config:OpenSettings()
+    elseif command == "lock" then
+        ns.Config:SetLocked(true)
+    elseif command == "unlock" then
+        ns.Config:SetLocked(false)
+    elseif command == "toggle" then
+        ns.Config:ToggleLock()
+    elseif command == "test" then
+        Core:ToggleTestMode()
+    elseif command == "on" or command == "enable" then
+        ns.db.enabled = true
+        ns.Print("Anzeige |cff55ff55aktiviert|r.")
+        Core:Refresh(true)
+    elseif command == "off" or command == "disable" then
+        ns.db.enabled = false
+        ns.Print("Anzeige |cffff5555deaktiviert|r.")
+        Core:Refresh(true)
+    elseif command == "reset" then
+        ns.Config:ResetPosition()
+    elseif command == "resetall" then
+        ns.Config:ResetAll()
+    elseif command == "status" then
+        Core:PrintStatus()
+    elseif command == "debug" then
+        ns.db.debug = not ns.db.debug
+        ns.Print("Debug-Ausgaben " .. (ns.db.debug and "an" or "aus") .. ".")
+    else
+        PrintHelp()
+    end
+end
+
+SLASH_MONKSTAGGERDISPLAY1 = "/msd"
+SLASH_MONKSTAGGERDISPLAY2 = "/stagger"
+SlashCmdList["MONKSTAGGERDISPLAY"] = HandleSlash
+
+--==========================================================================
+-- 7b. Addon-Kompartiment (Menue am Minimap-Button)
+--==========================================================================
+
+--- Linksklick oeffnet die Einstellungen, Rechtsklick schaltet die Sperre um.
+function MonkStaggerDisplay_OnAddonCompartmentClick(_, mouseButton)
+    if mouseButton == "RightButton" then
+        ns.Config:ToggleLock()
+    else
+        ns.Config:OpenSettings()
+    end
+end
+
+function MonkStaggerDisplay_OnAddonCompartmentEnter(_, menuButtonFrame)
+    GameTooltip:SetOwner(menuButtonFrame or UIParent, "ANCHOR_LEFT")
+    GameTooltip:SetText(ns.ADDON_TITLE, 1, 1, 1)
+    GameTooltip:AddLine("Linksklick: Einstellungen öffnen", 0.8, 0.8, 0.8)
+    GameTooltip:AddLine("Rechtsklick: Anker sperren/entsperren", 0.8, 0.8, 0.8)
+    GameTooltip:Show()
+end
+
+function MonkStaggerDisplay_OnAddonCompartmentLeave()
+    GameTooltip:Hide()
+end
+
+--==========================================================================
+-- 8. Start
+--==========================================================================
+
+function Core:Initialize()
+    local frame = CreateFrame("Frame", "MonkStaggerDisplayCore")
+    self.frame = frame
+
+    frame:SetScript("OnEvent", function(_, event, ...)
+        local handler = eventHandlers[event]
+        if handler then handler(Core, ...) end
+    end)
+    frame:SetScript("OnUpdate", OnUpdate)
+
+    frame:RegisterEvent("ADDON_LOADED")
+    frame:RegisterEvent("PLAYER_LOGIN")
+    frame:RegisterEvent("PLAYER_ENTERING_WORLD")
+    frame:RegisterEvent("PLAYER_SPECIALIZATION_CHANGED")
+    frame:RegisterEvent("PLAYER_TALENT_UPDATE")
+    frame:RegisterEvent("TRAIT_CONFIG_UPDATED")
+    frame:RegisterEvent("LEARNED_SPELL_IN_TAB")
+    frame:RegisterEvent("PLAYER_REGEN_DISABLED")
+    frame:RegisterEvent("PLAYER_REGEN_ENABLED")
+    frame:RegisterEvent("SPELL_UPDATE_COOLDOWN")
+    frame:RegisterEvent("SPELL_UPDATE_CHARGES")
+
+    -- Nur spielerbezogene Unit-Ereignisse
+    frame:RegisterUnitEvent("UNIT_HEALTH", "player")
+    frame:RegisterUnitEvent("UNIT_MAXHEALTH", "player")
+    frame:RegisterUnitEvent("UNIT_AURA", "player")
+    frame:RegisterUnitEvent("UNIT_ENTERED_VEHICLE", "player")
+    frame:RegisterUnitEvent("UNIT_EXITED_VEHICLE", "player")
+end
+
+Core:Initialize()

@@ -1,0 +1,20 @@
+# Build-Artefakte
+/dist/
+*.zip
+
+# Editor / IDE
+.idea/
+.vscode/
+*.swp
+*~
+
+# Betriebssystem
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# WoW-Laufzeitdateien (falls jemand im AddOns-Ordner entwickelt)
+WTF/
+Cache/
+Logs/
+*.bak

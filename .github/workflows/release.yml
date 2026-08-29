@@ -1,0 +1,47 @@
+name: Release
+
+on:
+  push:
+    tags: [ 'v*' ]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Archiv bauen und Release veröffentlichen
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Version aus der TOC lesen
+        id: version
+        run: |
+          v="$(grep -m1 '^## Version:' MonkStaggerDisplay/MonkStaggerDisplay.toc \
+               | sed 's/^## Version:[[:space:]]*//' | tr -d '\r')"
+          echo "version=$v" >> "$GITHUB_OUTPUT"
+          echo "Version: $v"
+
+      - name: Tag gegen TOC-Version prüfen
+        if: startsWith(github.ref, 'refs/tags/v')
+        run: |
+          tag="${GITHUB_REF#refs/tags/v}"
+          toc="${{ steps.version.outputs.version }}"
+          if [ "$tag" != "$toc" ]; then
+            echo "Tag v$tag passt nicht zur TOC-Version $toc" >&2
+            exit 1
+          fi
+
+      - name: Archiv bauen
+        run: |
+          sudo apt-get update && sudo apt-get install -y zip unzip
+          bash scripts/package.sh
+
+      - name: Release veröffentlichen
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*.zip
+          generate_release_notes: true
+          body_path: ${{ github.workspace }}/.github/release-body.md
+        continue-on-error: false

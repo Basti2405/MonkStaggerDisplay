@@ -1,0 +1,21 @@
+## Interface: 120100
+## Title: Monk Stagger Display
+## Title-deDE: Monk Stagger Display
+## Notes: Real-time stagger tracking with Purifying/Celestial Brew recommendations for Brewmaster Monks.
+## Notes-deDE: Echtzeit-Staggeranzeige mit Läuterndem-/Himmlischem-Gebräu-Empfehlung für Braumeister-Mönche.
+## Author: Basti2405
+## Version: 1.0.0
+## SavedVariables: MonkStaggerDB
+## IconTexture: Interface\Icons\ability_monk_brewmaster_spec
+## Category: Combat
+## Category-deDE: Kampf
+## Category-enUS: Combat
+## AddonCompartmentFunc: MonkStaggerDisplay_OnAddonCompartmentClick
+## AddonCompartmentFuncOnEnter: MonkStaggerDisplay_OnAddonCompartmentEnter
+## AddonCompartmentFuncOnLeave: MonkStaggerDisplay_OnAddonCompartmentLeave
+## X-Website: https://github.com/Basti2405/MonkStaggerDisplay
+## X-License: MIT
+
+Config.lua
+Display.lua
+Core.lua

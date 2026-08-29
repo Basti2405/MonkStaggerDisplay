@@ -1,0 +1,53 @@
+name: CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  test:
+    name: Syntax, Lint und Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Lua 5.1 und Luacheck installieren
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y lua5.1 luarocks
+          sudo luarocks install luacheck
+
+      - name: Syntaxprüfung aller Lua-Dateien
+        run: |
+          status=0
+          for f in MonkStaggerDisplay/*.lua tests/*.lua; do
+            if luac5.1 -p "$f"; then
+              echo "ok   $f"
+            else
+              echo "FAIL $f"; status=1
+            fi
+          done
+          exit $status
+
+      - name: Luacheck
+        run: luacheck MonkStaggerDisplay tests
+
+      - name: Testlauf gegen die WoW-API-Attrappe
+        run: lua5.1 tests/run_tests.lua
+
+      - name: TOC-Konsistenz prüfen
+        run: |
+          toc="MonkStaggerDisplay/MonkStaggerDisplay.toc"
+          status=0
+          # Jede in der TOC gelistete Lua-Datei muss existieren
+          while read -r file; do
+            [ -f "MonkStaggerDisplay/$file" ] || { echo "In TOC gelistet, fehlt: $file"; status=1; }
+          done < <(grep -E '\.lua[[:space:]]*$' "$toc" | tr -d '\r')
+          # Jede vorhandene Lua-Datei muss in der TOC stehen
+          for f in MonkStaggerDisplay/*.lua; do
+            base="$(basename "$f")"
+            grep -qF "$base" "$toc" || { echo "Nicht in TOC gelistet: $base"; status=1; }
+          done
+          exit $status
