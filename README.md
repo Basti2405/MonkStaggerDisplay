@@ -4,6 +4,8 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Interface](https://img.shields.io/badge/WoW-12.1.0%20(Midnight)-blue.svg)](MonkStaggerDisplay/MonkStaggerDisplay.toc)
 
+**[→ Projektseite mit Live-Demo](https://basti2405.github.io/MonkStaggerDisplay/)**
+
 Stagger-Anzeige mit Empfehlungs-Engine für **Braumeister-Mönche** (Spec-ID 268) in Modern WoW (Retail).
 Keine Bibliotheken, keine Abhängigkeiten – drei Lua-Dateien und eine TOC.
 
