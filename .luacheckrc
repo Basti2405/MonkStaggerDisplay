@@ -57,7 +57,7 @@ files["tests/run_tests.lua"] = {
     globals = {
         "UnitStagger", "UnitHealth", "UnitHealthMax", "UnitAffectingCombat",
         -- Attrappen-Schalter und mitgeschnittene Ausgabe
-        "Settings", "C_Spell", "print",
+        "Settings", "C_Spell", "print", "BEKANNTE_ZAUBER",
     },
     read_globals = { "MarkSecret", "issecretvalue", "C_EventUtils" },
 }

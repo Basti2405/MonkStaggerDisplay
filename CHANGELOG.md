@@ -15,6 +15,16 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
   des Staggers gesetzt — bei konstant 0 also nie. Übrig blieb allein das
   Kampfflag. Fällt das zwischen zwei Pulls für einen Moment ab, verschwand die
   Leiste mitten im Geschehen.
+- **Wer Himmlische Infusion getalentet hatte, bekam nie eine
+  Schild-Empfehlung.** Gemeldet als „der Schild heißt jetzt Himmlische
+  Infusion" — tatsächlich ist es keine Umbenennung: **Himmlisches Gebräu**
+  (322507) und **Himmlische Infusion** (1241059) sind seit Midnight zwei
+  Zauber in einem exklusiven Wahlknoten des Talentbaums. Man hat immer genau
+  einen von beiden. Das AddOn fragte fest 322507 ab und fand auf einem
+  Charakter mit Infusion schlicht nichts; `celestial.known` blieb false, die
+  Empfehlung kam nie. Nach den gängigen Leitfäden ist die Infusion die
+  übliche Wahl, dürfte also die Mehrheit betroffen haben.
+
 - **Der entsperrte Anker war auf einer anderen Spezialisierung unsichtbar.**
   `Display:ApplyLockState` setzt beim Entsperren korrekt Alpha 1 —
   `Config:SetLocked` ruft unmittelbar danach `ForceUpdate` auf, und `Core:Refresh`
@@ -32,11 +42,18 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Die Sichtbarkeit hatte bis hierher **keine einzige Prüfung** — das ist der
   Grund, warum beides durchrutschte. Acht Testfälle decken jetzt entsperrten
   Anker, Spezialisierungswechsel, gesperrten Stagger und den Normalfall ab.
-- **Himmlisches Gebräu heißt in Midnight „Himmlische Infusion".** Die Spell-ID
-  (322507) ist unverändert, Tooltip und Symbol kommen ohnehin über
-  `SetSpellByID` bzw. `GetSpellIcon` aus dem Spiel und waren nie falsch —
-  betroffen waren die fest eingetragenen Texte im Optionsfenster, im README
-  und auf der Projektseite.
+- Neu `ns.GetCelestialSpellID()`: bestimmt über `IsPlayerSpell`, welcher der
+  beiden Schild-Zauber auf diesem Charakter existiert, und wird bei jedem
+  Durchlauf gestellt — ein Lookup ist billiger, als den Wert über
+  Talent-Ereignisse aktuell zu halten. `Display:SetCelestialSpell` zieht
+  Symbol und Tooltip nach, sodass Umtalentieren im laufenden Betrieb greift.
+  Kennt der Client `IsPlayerSpell` nicht, bleibt das Gebräu die konservative
+  Annahme. Acht Testfälle decken beide Talente, keines von beiden und den
+  Wechsel ab.
+- Die nutzersichtbaren Texte nennen den Zauber nicht mehr beim Namen, sondern
+  sprechen vom **Schild-Zauber** — welcher es ist, hängt am Talent. Tooltip
+  und Symbol kamen ohnehin schon über `SetSpellByID` bzw. `GetSpellIcon` aus
+  dem Spiel und tragen den richtigen Namen von selbst.
 - **Aufklapplisten statt Durchschalt-Knöpfen.** „Leistentextur" und
   „Hervorhebung" waren Knöpfe, die einen Wert nach dem anderen durchschalteten;
   man musste klicken, um zu sehen, was es überhaupt gibt. Beide sind jetzt

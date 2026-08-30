@@ -270,7 +270,7 @@ function Display:Initialize()
     self.brewContainer = brews
 
     self.purifyIcon   = CreateBrewIcon(brews, ns.SPELL.PURIFYING_BREW)
-    self.celestialIcon= CreateBrewIcon(brews, ns.SPELL.CELESTIAL_BREW)
+    self.celestialIcon= CreateBrewIcon(brews, ns.GetCelestialSpellID() or ns.SPELL.CELESTIAL_BREW)
     self.purifyIcon:SetPoint("TOPLEFT", brews, "TOPLEFT", 0, 0)
     self.celestialIcon:SetPoint("TOPLEFT", self.purifyIcon, "TOPRIGHT", 6, 0)
 
@@ -612,6 +612,17 @@ function Display:UpdateShownState()
     elseif not self.frame:IsShown() then
         self.frame:Show()
     end
+end
+
+--- Haelt das Schild-Symbol auf dem Zauber, den dieser Charakter hat.
+--- Himmlisches Gebraeu und Himmlische Infusion sind ein exklusiver
+--- Wahlknoten; wer umtalentiert, bekommt sonst Symbol und Tooltip des
+--- Zaubers, den er gerade nicht besitzt.
+function Display:SetCelestialSpell(spellID)
+    if not self.celestialIcon or not spellID then return end
+    if self.celestialIcon.spellID == spellID then return end
+    self.celestialIcon.spellID = spellID
+    self.celestialIcon.icon:SetTexture(ns.GetSpellIcon(spellID))
 end
 
 function Display:HideImmediately()

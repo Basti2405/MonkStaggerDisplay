@@ -383,6 +383,36 @@ check("Stagger lesbar 0, kein Kampf: aus", not sichtbar())
 _G.UnitStagger, _G.UnitAffectingCombat = _stagger, _combat
 ns.db.locked, ns.Core.isBrewmaster = _locked, _spec
 
+print("\n== Schild-Zauber: exklusiver Wahlknoten ==")
+-- Aus dem Spiel gemeldet als "heisst jetzt Himmlische Infusion". Tatsaechlich
+-- sind es zwei Zauber, zwischen denen der Talentbaum waehlen laesst. Das
+-- AddOn kannte nur 322507 -- wer die Infusion gewaehlt hatte (laut den
+-- gaengigen Leitfaeden der Regelfall), bekam nie eine Schild-Empfehlung.
+
+local INFUSION, GEBRAEU = ns.SPELL.CELESTIAL_INFUSION, ns.SPELL.CELESTIAL_BREW
+check("beide IDs bekannt", INFUSION == 1241059 and GEBRAEU == 322507)
+
+BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = false, true
+check("nur Infusion getalentet -> Infusion", ns.GetCelestialSpellID() == INFUSION)
+check("  Zustand kennt den Zauber", ns.Core:BuildState().celestial.known == true)
+
+BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = true, false
+check("nur Gebräu getalentet -> Gebräu", ns.GetCelestialSpellID() == GEBRAEU)
+check("  Zustand kennt den Zauber", ns.Core:BuildState().celestial.known == true)
+
+BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = false, false
+check("keiner von beiden -> nil", ns.GetCelestialSpellID() == nil)
+check("  Zustand meldet unbekannt, ohne Fehler",
+      ns.Core:BuildState().celestial.known == false)
+
+-- Umtalentieren im laufenden Betrieb: Symbol und Tooltip muessen folgen.
+BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = false, true
+ns.Core:BuildState()
+check("Symbol folgt beim Umtalentieren",
+      ns.Display.celestialIcon.spellID == INFUSION)
+
+BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = nil, nil
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")

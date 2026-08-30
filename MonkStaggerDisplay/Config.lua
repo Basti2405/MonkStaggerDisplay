@@ -28,13 +28,36 @@ ns.SPEC_ID_BREWMASTER = 268
 ns.STAGGER_WINDOW = 10
 
 ns.SPELL = {
-    PURIFYING_BREW   = 119582,  -- Laeuterndes Gebraeu
-    CELESTIAL_BREW   = 322507,  -- Himmlische Infusion (bis Midnight: Himmlisches Gebraeu)
-    STAGGER_LIGHT    = 124275,  -- Leichter Stagger (Aura)
-    STAGGER_MODERATE = 124274,  -- Mittlerer Stagger (Aura)
-    STAGGER_HEAVY    = 124273,  -- Schwerer Stagger (Aura)
-    PURIFIED_CHI     = 386963,  -- Gelaeutertes Chi (verstaerkt die Himmlische Infusion)
+    PURIFYING_BREW     = 119582,  -- Laeuterndes Gebraeu
+    CELESTIAL_BREW     = 322507,  -- Himmlisches Gebraeu
+    CELESTIAL_INFUSION = 1241059, -- Himmlische Infusion
+    STAGGER_LIGHT      = 124275,  -- Leichter Stagger (Aura)
+    STAGGER_MODERATE   = 124274,  -- Mittlerer Stagger (Aura)
+    STAGGER_HEAVY      = 124273,  -- Schwerer Stagger (Aura)
+    PURIFIED_CHI       = 386963,  -- Gelaeutertes Chi
 }
+
+--- Der Schild-Zauber, den dieser Charakter tatsaechlich hat.
+--- ------------------------------------------------------------------------
+--- Himmlisches Gebraeu und Himmlische Infusion sind seit Midnight ein
+--- exklusiver Wahlknoten im Talentbaum -- man hat immer genau eines von
+--- beiden, nie beide. Wer die Infusion waehlt (laut den gaengigen Leitfaeden
+--- der Regelfall), besass mit der festen ID 322507 einen Zauber, den es auf
+--- diesem Charakter gar nicht gibt: Es kam nie eine Schild-Empfehlung.
+---
+--- Rueckgabe: spellID, oder nil wenn keiner von beiden bekannt ist.
+function ns.GetCelestialSpellID()
+    if IsPlayerSpell and IsPlayerSpell(ns.SPELL.CELESTIAL_INFUSION) then
+        return ns.SPELL.CELESTIAL_INFUSION
+    end
+    if IsPlayerSpell and IsPlayerSpell(ns.SPELL.CELESTIAL_BREW) then
+        return ns.SPELL.CELESTIAL_BREW
+    end
+    -- Kennt der Client IsPlayerSpell nicht, bleibt das Gebraeu die
+    -- konservative Annahme: Es ist der aeltere der beiden Zauber.
+    if not IsPlayerSpell then return ns.SPELL.CELESTIAL_BREW end
+    return nil
+end
 
 ns.LEVEL = { LIGHT = 1, MEDIUM = 2, HEAVY = 3 }
 
@@ -918,7 +941,7 @@ function Config:BuildOptionsPanel()
         function() return db().bar.showSpark end,
         function(v) db().bar.showSpark = v end), 8)
     add(CreateCheckbox(panel, "Gebräu-Symbole anzeigen",
-        "Zeigt Läuterndes Gebräu und Himmlische Infusion mit Abklingzeit unter der Leiste.",
+        "Zeigt Läuterndes Gebräu und den Schild-Zauber mit Abklingzeit unter der Leiste.",
         function() return db().bar.showBrews end,
         function(v) db().bar.showBrews = v end), 8)
     add(CreateSlider(panel, "Größe der Gebräu-Symbole", 16, 64, 1,
@@ -1020,7 +1043,7 @@ function Config:BuildOptionsPanel()
     -- --- Empfehlungen ---
     add(CreateHeader(content, "Empfehlungs-Engine"), 0, 4)
     add(CreateDescription(content,
-        "Hebt Läuterndes Gebräu bzw. Himmlische Infusion hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
+        "Hebt Läuterndes Gebräu bzw. den Schild-Zauber hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
     add(CreateCheckbox(panel, "Empfehlungen aktiviert", nil,
         function() return db().recommend.enabled end,
         function(v) db().recommend.enabled = v end), 8)
@@ -1048,7 +1071,7 @@ function Config:BuildOptionsPanel()
         function() return db().recommend.emergencyHealthPct end,
         function(v) db().recommend.emergencyHealthPct = v end,
         function(v) return v .. " % Leben" end), 8)
-    add(CreateCheckbox(panel, "Himmlische Infusion empfehlen", nil,
+    add(CreateCheckbox(panel, "Schild-Zauber empfehlen", nil,
         function() return db().recommend.celestialEnabled end,
         function(v) db().recommend.celestialEnabled = v end), 8)
     add(CreateSlider(panel, "Benötigte Stapel Geläutertes Chi", 1, 10, 1,

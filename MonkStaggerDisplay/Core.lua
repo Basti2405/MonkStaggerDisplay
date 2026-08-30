@@ -196,7 +196,18 @@ function Core:BuildState()
     state.purifiedChi= ns.GetPlayerAuraStacks(ns.SPELL.PURIFIED_CHI)
 
     FillSpellInfo(state.purify,    ns.SPELL.PURIFYING_BREW)
-    FillSpellInfo(state.celestial, ns.SPELL.CELESTIAL_BREW)
+    -- Welcher der beiden Schild-Zauber getalentet ist, kann sich jederzeit
+    -- aendern. IsPlayerSpell ist ein einfacher Lookup; ihn hier zu stellen
+    -- ist billiger als ihn ueber Talent-Ereignisse aktuell zu halten.
+    local celestialID = ns.GetCelestialSpellID()
+    state.celestialSpellID = celestialID
+    if celestialID then
+        FillSpellInfo(state.celestial, celestialID)
+        ns.Display:SetCelestialSpell(celestialID)
+    else
+        wipe(state.celestial)
+        state.celestial.known = false
+    end
 
     self:EvaluateRecommendations(state)
     return state
@@ -417,7 +428,7 @@ function Core:UpdateSpecialization()
             -- Symbole neu laden, falls die Zauber erst jetzt bekannt sind
             if ns.Display.initialized then
                 ns.Display.purifyIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.PURIFYING_BREW))
-                ns.Display.celestialIcon.icon:SetTexture(ns.GetSpellIcon(ns.SPELL.CELESTIAL_BREW))
+                ns.Display:SetCelestialSpell(ns.GetCelestialSpellID())
             end
         else
             if not self.testMode then

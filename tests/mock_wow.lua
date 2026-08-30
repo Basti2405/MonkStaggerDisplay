@@ -184,7 +184,11 @@ function UnitAffectingCombat() return true end
 function InCombatLockdown() return false end
 function UnitInVehicle()    return false end
 function UnitHasVehicleUI() return false end
-function IsPlayerSpell()    return true end
+-- Standardmaessig kennt der Charakter jeden Zauber. Tests setzen gezielt
+-- einzelne IDs auf false, um den Talent-Wahlknoten nachzustellen
+-- (Himmlisches Gebraeu 322507 vs. Himmlische Infusion 1241059).
+BEKANNTE_ZAUBER = setmetatable({}, { __index = function() return true end })
+function IsPlayerSpell(spellID) return BEKANNTE_ZAUBER[spellID] and true or false end
 function CombatLogGetCurrentEventInfo()
     return 0, "SPELL_DAMAGE", false, "Creature-1", "Boss", 0, 0, "Player-1234-ABCDEF"
 end

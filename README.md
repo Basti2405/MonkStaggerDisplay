@@ -59,14 +59,16 @@ Die Module kommunizieren ausschließlich über die private Addon-Tabelle (`local
 | Mittel | 30 – 60 % | Gelb |
 | Schwer | > 60 % | Rot |
 
-**Empfehlungs-Engine** — Hebt Läuterndes Gebräu bzw. Himmlische Infusion durch Pulsieren und/oder Leuchten hervor:
+**Empfehlungs-Engine** — Hebt Läuterndes Gebräu bzw. den Schild-Zauber durch Pulsieren und/oder Leuchten hervor:
 
 *Läuterndes Gebräu* (119582)
 1. **Notfall** – Leben unter der Notfallschwelle (Standard 40 %) und Stagger aktiv.
 2. **Regulär** – Stagger über der Schwelle (Standard 60 % max. Leben) **und** die Läuterung entfernt mindestens den Mindestwert (Standard 5 % max. Leben). Der zweite Teil verhindert Empfehlungen, die kaum defensiven Wert haben.
 3. **Ladungsschutz** – Eine Ladung würde durch das Ladungslimit verfallen und die Läuterung wäre noch spürbar.
 
-*Himmlische Infusion* (322507)
+*Schild-Zauber* — **Himmlisches Gebräu** (322507) oder **Himmlische Infusion** (1241059)
+
+Seit Midnight sind das zwei Zauber in einem exklusiven Wahlknoten des Talentbaums; man hat immer genau einen davon. Das AddOn erkennt über `IsPlayerSpell`, welchen, und verfolgt ihn — Symbol und Tooltip folgen dem Umtalentieren.
 1. Genügend Stapel **Geläutertes Chi** (386963) für einen maximalen Schild (Standard 3).
 2. Leben unter der Notfallschwelle (Standard 50 %).
 
@@ -114,7 +116,7 @@ Schieberegler und Farbwähler sind ohne Blizzard-Templates gebaut, um Brüche be
 
 ```bash
 luacheck MonkStaggerDisplay tests     # Lint (0 Warnungen erwartet)
-lua5.1 tests/run_tests.lua            # 113 Prüfungen gegen die API-Attrappe
+lua5.1 tests/run_tests.lua            # 129 Prüfungen gegen die API-Attrappe
 bash scripts/package.sh               # dist/MonkStaggerDisplay-<version>.zip
 ```
 
@@ -128,7 +130,7 @@ Er ersetzt keinen Test im Spiel – die Darstellung selbst wird nicht gerendert.
 Version in der TOC erhöhen, `CHANGELOG.md` ergänzen, dann:
 
 ```bash
-git tag v1.0.5 && git push origin v1.0.5
+git tag v1.0.6 && git push origin v1.0.6
 ```
 
 Der Release-Workflow prüft, dass der Tag zur TOC-Version passt, baut das Archiv
@@ -145,7 +147,7 @@ und veröffentlicht es als GitHub-Release.
   Geläutertes Chi arbeiten unverändert. `/msd status` weist aus, was gerade gesperrt
   ist. Betrifft alle Fassungen ab 1.0.1.
 - **Geläutertes Chi (386963):** Die Spell-ID konnte nicht gegen den Client verifiziert
-  werden. Findet das AddOn die Aura nicht, bleibt für die Himmlische Infusion nur der
+  werden. Findet das AddOn die Aura nicht, bleibt für den Schild-Zauber nur der
   Notfallpfad über das Leben — der wiederum ausfällt, solange dieses gesperrt ist.
   Die ID steht als Konstante in `Config.lua`.
 - Die Empfehlungswerte sind Heuristiken, keine Simulation. Insbesondere „Läuterndes
