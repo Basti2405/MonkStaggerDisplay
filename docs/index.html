@@ -238,6 +238,8 @@ a{color:inherit}
 .rule-tag.warn{color:var(--s-med)}
 .rule h3{font-family:var(--body);font-weight:600;font-size:16px;margin:0 0 7px}
 .rule p{margin:0;color:var(--bone-dim);font-size:14.5px}
+.rule p.rule-note{margin-top:10px;padding-left:11px;border-left:2px solid var(--s-med);color:var(--bone-dim);font-size:13.5px}
+.rule p.rule-note strong{color:var(--s-med)}
 .rule code{font-family:var(--mono);font-size:13px;color:var(--bone);background:var(--ink-raised);padding:1px 5px;border:var(--rule)}
 
 /* ---------- Installation ---------- */
@@ -420,6 +422,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       <p>
         Five triggers, each one switchable on its own and adjustable in its values.
         They are heuristics, not a simulation — the defaults are shown below.
+        Two of the five are dormant under Midnight; see the note on each rule.
       </p>
     </div>
 
@@ -429,6 +432,9 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <div>
           <h3>Health below 40%, stagger active</h3>
           <p>Overrides everything else. What counts here is not efficiency but that you stay on your feet.</p>
+          <p class="rule-note"><strong>Dormant since 1.0.1.</strong> Midnight returns health as a secret
+             value that an add-on is not allowed to compute with. While that holds, this rule does not fire –
+             a guessed number would be the worse answer.</p>
         </div>
       </div>
       <div class="rule">
@@ -459,6 +465,8 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <div>
           <h3>Health below 50%</h3>
           <p>Regardless of stacks. A small shield now beats a large one you never live to see.</p>
+          <p class="rule-note"><strong>Dormant since 1.0.1</strong> – same reason: secret health.
+             The stack-based recommendation is unaffected.</p>
         </div>
       </div>
     </div>

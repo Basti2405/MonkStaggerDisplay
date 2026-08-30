@@ -54,6 +54,10 @@ globals = {
 
 -- Der Testlauf ersetzt absichtlich API-Funktionen, um Szenarien zu erzeugen.
 files["tests/run_tests.lua"] = {
-    globals = { "UnitStagger", "UnitHealth", "UnitHealthMax", "UnitAffectingCombat" },
+    globals = {
+        "UnitStagger", "UnitHealth", "UnitHealthMax", "UnitAffectingCombat",
+        -- Attrappen-Schalter und mitgeschnittene Ausgabe
+        "Settings", "C_Spell", "print",
+    },
     read_globals = { "MarkSecret", "issecretvalue", "C_EventUtils" },
 }

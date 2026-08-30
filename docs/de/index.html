@@ -238,6 +238,8 @@ a{color:inherit}
 .rule-tag.warn{color:var(--s-med)}
 .rule h3{font-family:var(--body);font-weight:600;font-size:16px;margin:0 0 7px}
 .rule p{margin:0;color:var(--bone-dim);font-size:14.5px}
+.rule p.rule-note{margin-top:10px;padding-left:11px;border-left:2px solid var(--s-med);color:var(--bone-dim);font-size:13.5px}
+.rule p.rule-note strong{color:var(--s-med)}
 .rule code{font-family:var(--mono);font-size:13px;color:var(--bone);background:var(--ink-raised);padding:1px 5px;border:var(--rule)}
 
 /* ---------- Installation ---------- */
@@ -420,6 +422,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       <p>
         Fünf Auslöser, jeder einzeln abschaltbar und in den Werten anpassbar.
         Sie sind Heuristiken, keine Simulation – die Startwerte stehen unten.
+        Zwei der fünf ruhen unter Midnight; die Hinweise stehen an der jeweiligen Regel.
       </p>
     </div>
 
@@ -429,6 +432,9 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <div>
           <h3>Leben unter 40 %, Stagger aktiv</h3>
           <p>Überschreibt alles andere. Hier zählt nicht der Wirkungsgrad, sondern dass du stehen bleibst.</p>
+          <p class="rule-note"><strong>Ruht seit 1.0.1.</strong> Midnight gibt das Leben als gesperrten Wert
+             aus, mit dem ein AddOn nicht rechnen darf. Solange das so bleibt, löst diese Regel nicht aus –
+             eine geratene Zahl wäre die schlechtere Antwort.</p>
         </div>
       </div>
       <div class="rule">
@@ -459,6 +465,8 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <div>
           <h3>Leben unter 50 %</h3>
           <p>Unabhängig von den Stapeln. Ein kleiner Schild jetzt schlägt einen großen, den du nicht mehr erlebst.</p>
+          <p class="rule-note"><strong>Ruht seit 1.0.1</strong> – aus demselben Grund: gesperrtes Leben.
+             Die Empfehlung über die Stapel bleibt davon unberührt.</p>
         </div>
       </div>
     </div>

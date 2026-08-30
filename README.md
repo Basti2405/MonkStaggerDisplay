@@ -114,7 +114,7 @@ Schieberegler und Farbwähler sind ohne Blizzard-Templates gebaut, um Brüche be
 
 ```bash
 luacheck MonkStaggerDisplay tests     # Lint (0 Warnungen erwartet)
-lua5.1 tests/run_tests.lua            # 49 Prüfungen gegen die API-Attrappe
+lua5.1 tests/run_tests.lua            # 113 Prüfungen gegen die API-Attrappe
 bash scripts/package.sh               # dist/MonkStaggerDisplay-<version>.zip
 ```
 
@@ -128,7 +128,7 @@ Er ersetzt keinen Test im Spiel – die Darstellung selbst wird nicht gerendert.
 Version in der TOC erhöhen, `CHANGELOG.md` ergänzen, dann:
 
 ```bash
-git tag v1.0.1 && git push origin v1.0.1
+git tag v1.0.5 && git push origin v1.0.5
 ```
 
 Der Release-Workflow prüft, dass der Tag zur TOC-Version passt, baut das Archiv
@@ -136,8 +136,17 @@ und veröffentlicht es als GitHub-Release.
 
 ## Bekannte Einschränkungen
 
+- **Gesperrte Werte unter Midnight:** Der Client gibt `UnitHealth("player")` sowie
+  Ladungsstand und Abklingzeit der Gebräue als *secret value* aus — ein getaintetes
+  AddOn darf damit nicht rechnen. Ist ein Wert nicht lesbar, trifft das AddOn bewusst
+  **keine** Aussage: Die beiden Notfall-Empfehlungen (Läutern bzw. Schild unterhalb
+  einer Lebensschwelle) lösen dann nicht aus, und der Ladungszähler zeigt `?` statt
+  einer geratenen Zahl. Stagger-Anzeige, Schwellenfarben und die Empfehlung über
+  Geläutertes Chi arbeiten unverändert. `/msd status` weist aus, was gerade gesperrt
+  ist. Betrifft alle Fassungen ab 1.0.1.
 - **Geläutertes Chi (386963):** Die Spell-ID konnte nicht gegen den Client verifiziert
-  werden. Findet das AddOn die Aura nicht, greift für Himmlisches Gebräu nur noch der
-  Notfallpfad (Leben unter Schwelle). Die ID steht als Konstante in `Config.lua`.
+  werden. Findet das AddOn die Aura nicht, bleibt für Himmlisches Gebräu nur der
+  Notfallpfad über das Leben — der wiederum ausfällt, solange dieses gesperrt ist.
+  Die ID steht als Konstante in `Config.lua`.
 - Die Empfehlungswerte sind Heuristiken, keine Simulation. Insbesondere „Läuterndes
   Gebräu entfernt 50 %" ist ein konfigurierbarer Startwert.
