@@ -1,16 +1,16 @@
 <!doctype html>
-<html lang="en">
+<html lang="de">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Monk Stagger Display – Stagger tracking for Brewmaster Monks</title>
-<meta name="description" content="WoW addon for Brewmaster Monks: real-time stagger tracking with recommendations for Purifying and Celestial Brew.">
+<title>Monk Stagger Display – Stagger-Anzeige für Braumeister-Mönche</title>
+<meta name="description" content="WoW-AddOn für Braumeister-Mönche: Echtzeit-Stagger-Tracking mit Empfehlungen für Läuterndes und Himmlisches Gebräu.">
 <meta property="og:title" content="Monk Stagger Display">
-<meta property="og:description" content="Real-time stagger display with brew recommendations for Brewmaster Monks. WoW Retail 12.1.">
+<meta property="og:description" content="Echtzeit-Stagger-Anzeige mit Gebräu-Empfehlungen für Braumeister-Mönche. WoW Retail 12.1.">
 <meta property="og:type" content="website">
-<meta property="og:locale" content="en_US">
-<meta property="og:locale:alternate" content="de_DE">
-<link rel="canonical" href="https://basti2405.github.io/MonkStaggerDisplay/">
+<meta property="og:locale" content="de_DE">
+<meta property="og:locale:alternate" content="en_US">
+<link rel="canonical" href="https://basti2405.github.io/MonkStaggerDisplay/de/">
 <link rel="alternate" hreflang="en" href="https://basti2405.github.io/MonkStaggerDisplay/">
 <link rel="alternate" hreflang="de" href="https://basti2405.github.io/MonkStaggerDisplay/de/">
 <link rel="alternate" hreflang="x-default" href="https://basti2405.github.io/MonkStaggerDisplay/">
@@ -52,7 +52,7 @@ a{color:inherit}
 
 .wrap{max-width:1140px;margin:0 auto;padding-inline:var(--gut)}
 
-/* ---------- Eyebrow: the recurring structural element ---------- */
+/* ---------- Eyebrow: das wiederkehrende Strukturelement ---------- */
 .eyebrow{
   font-family:var(--mono);font-size:11px;font-weight:500;
   letter-spacing:.22em;text-transform:uppercase;color:var(--bone-faint);
@@ -60,7 +60,7 @@ a{color:inherit}
 }
 .eyebrow::after{content:"";flex:1;height:1px;background:var(--ink-line)}
 
-/* ---------- Header bar ---------- */
+/* ---------- Kopfzeile ---------- */
 .topbar{
   border-bottom:var(--rule);position:sticky;top:0;z-index:20;
   background:rgba(10,18,16,.86);backdrop-filter:blur(10px);
@@ -85,14 +85,14 @@ a{color:inherit}
 .topbar-links .ghost:hover{border-color:var(--jade);color:var(--jade)}
 @media(max-width:620px){.nav-hide{display:none}}
 
-/* Language switch */
+/* Sprachumschalter */
 .lang{display:flex;align-items:center;gap:7px;font-family:var(--mono);font-size:12px;letter-spacing:.08em}
 .lang a{color:var(--bone-faint);text-decoration:none}
 .lang a:hover{color:var(--bone)}
 .lang a[aria-current]{color:var(--jade)}
 .lang i{font-style:normal;color:var(--ink-line)}
 
-/* ---------- RIG: the instrument ---------- */
+/* ---------- RIG: das Instrument ---------- */
 .rig{padding:clamp(30px,6vw,64px) 0 clamp(26px,4vw,44px)}
 .rig-frame{
   border:var(--rule);background:
@@ -119,7 +119,7 @@ a{color:inherit}
   .readouts{grid-template-columns:repeat(2,1fr)}
 }
 
-/* The bar */
+/* Der Balken */
 .meter{position:relative;height:clamp(46px,7vw,64px);border:var(--rule);background:#060B0A;overflow:hidden}
 .meter-fill{
   position:absolute;inset:0 auto 0 0;width:0%;
@@ -141,7 +141,7 @@ a{color:inherit}
 .meter.is-urgent .meter-glow{animation:pulse .8s ease-in-out infinite}
 @keyframes pulse{0%,100%{opacity:.18}50%{opacity:1}}
 
-/* Brew row */
+/* Gebräu-Reihe */
 .brews{display:flex;align-items:center;gap:14px;margin-top:22px;flex-wrap:wrap}
 .brew{
   position:relative;width:54px;height:54px;flex:none;
@@ -196,7 +196,7 @@ a{color:inherit}
 .fact dt{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;color:var(--bone-faint)}
 .fact dd{margin:0;font-family:var(--mono);font-size:13px;text-align:right}
 
-/* ---------- Thresholds ---------- */
+/* ---------- Schwellen ---------- */
 .bands{padding:clamp(34px,6vw,70px) 0;border-top:var(--rule)}
 .band-row{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--ink-line);border:var(--rule)}
 @media(max-width:780px){.band-row{grid-template-columns:1fr}}
@@ -218,7 +218,7 @@ a{color:inherit}
 }
 .band p{margin:0;font-size:14px;color:var(--bone-dim)}
 
-/* ---------- Rules ---------- */
+/* ---------- Regeln ---------- */
 .rules{padding:clamp(34px,6vw,70px) 0;border-top:var(--rule)}
 .rules-head{display:grid;grid-template-columns:1fr 1fr;gap:clamp(24px,5vw,60px);align-items:end;margin-bottom:34px}
 @media(max-width:840px){.rules-head{grid-template-columns:1fr}}
@@ -262,7 +262,7 @@ pre .p{color:var(--jade)}
 .cmd code{font-family:var(--mono);font-size:13px;color:var(--jade)}
 .cmd span{color:var(--bone-dim)}
 
-/* ---------- Footer ---------- */
+/* ---------- Fuß ---------- */
 footer{border-top:var(--rule);padding:26px 0 40px}
 .foot{display:flex;justify-content:space-between;gap:16px;flex-wrap:wrap;
   font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;color:var(--bone-faint)}
@@ -288,11 +288,11 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       <span class="brand-name">Monk <span>Stagger</span> Display</span>
     </a>
     <nav class="topbar-links">
-      <a class="nav-hide" href="#thresholds">Thresholds</a>
+      <a class="nav-hide" href="#thresholds">Schwellen</a>
       <a class="nav-hide" href="#engine">Engine</a>
-      <a class="nav-hide" href="#install">Install</a>
+      <a class="nav-hide" href="#install">Installation</a>
       <span class="lang">
-        <a href="./" hreflang="en" aria-current="page">EN</a><i>/</i><a href="de/" hreflang="de" lang="de">DE</a>
+        <a href="../" hreflang="en" lang="en">EN</a><i>/</i><a href="./" hreflang="de" aria-current="page">DE</a>
       </span>
       <a class="ghost" href="https://github.com/Basti2405/MonkStaggerDisplay">GitHub</a>
     </nav>
@@ -301,32 +301,32 @@ footer{border-top:var(--rule);padding:26px 0 40px}
 
 <main id="top">
 
-  <!-- ============ The instrument ============ -->
+  <!-- ============ Das Instrument ============ -->
   <section class="rig wrap" aria-labelledby="rig-h">
-    <p class="eyebrow" id="rig-h">Live simulation · the same logic as the addon</p>
+    <p class="eyebrow" id="rig-h">Live-Simulation · dieselbe Logik wie im AddOn</p>
 
     <div class="rig-frame">
       <div class="readouts">
         <div class="ro">
           <div class="ro-k">Stagger</div>
-          <div class="ro-v" id="roPct">0.0%</div>
+          <div class="ro-v" id="roPct">0,0&thinsp;%</div>
         </div>
         <div class="ro">
-          <div class="ro-k">Absolute</div>
+          <div class="ro-k">Absolut</div>
           <div class="ro-v" id="roAbs">0</div>
         </div>
         <div class="ro">
-          <div class="ro-k">Damage/s</div>
+          <div class="ro-k">Schaden/s</div>
           <div class="ro-v" id="roDtps">0</div>
         </div>
         <div class="ro">
-          <div class="ro-k">Tier</div>
-          <div class="ro-v" id="roLevel">Light</div>
+          <div class="ro-k">Stufe</div>
+          <div class="ro-v" id="roLevel">Leicht</div>
         </div>
       </div>
 
       <div class="meter" id="meter" role="img" aria-live="off"
-           aria-label="Simulated stagger bar">
+           aria-label="Simulierte Stagger-Leiste">
         <div class="meter-fill" id="fill"></div>
         <div class="meter-tick" style="left:30%"><b>30</b></div>
         <div class="meter-tick" style="left:60%"><b>60</b></div>
@@ -334,30 +334,30 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       </div>
 
       <div class="brews">
-        <div class="brew" id="brewP" title="Purifying Brew">
+        <div class="brew" id="brewP" title="Läuterndes Gebräu">
           <svg viewBox="0 0 24 24" fill="none" stroke="#37E0A8" stroke-width="1.6" aria-hidden="true">
             <path d="M4 9h16l-1.6 9.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 9Z"/>
             <path d="M8.4 5.2c0 1.1 1.6 1.5 1.6 2.6M12 3.6c0 1.4 1.9 1.9 1.9 3.2M15.6 5.4c0 1-1.4 1.3-1.4 2.4"/>
           </svg>
           <span class="brew-charges" id="chargeP">2</span>
         </div>
-        <div class="brew" id="brewC" title="Celestial Brew">
+        <div class="brew" id="brewC" title="Himmlisches Gebräu">
           <svg viewBox="0 0 24 24" fill="none" stroke="#37E0A8" stroke-width="1.6" aria-hidden="true">
             <path d="M12 3.4 19 6v5.6c0 4-2.9 7.3-7 8.9-4.1-1.6-7-4.9-7-8.9V6l7-2.6Z"/>
             <path d="M9.2 11.8l2 2.1 3.7-4"/>
           </svg>
         </div>
-        <p class="prompt" id="prompt">Engine quiet — nothing to do.</p>
+        <p class="prompt" id="prompt">Engine ruhig – kein Handlungsbedarf.</p>
       </div>
 
       <div class="rig-controls">
-        <button class="btn" id="btnHit" type="button">Take a hit</button>
-        <button class="btn btn-key" id="btnPurify" type="button">Purify</button>
+        <button class="btn" id="btnHit" type="button">Treffer einstecken</button>
+        <button class="btn btn-key" id="btnPurify" type="button">Läutern</button>
         <button class="btn" id="btnPause" type="button">Pause</button>
       </div>
       <p class="rig-note">
-        The pool drains over 10&nbsp;seconds. Purifying removes 50% of it.
-        If the bar stays red, the engine steps in by itself.
+        Der Pool baut sich über 10&nbsp;Sekunden ab. Läutern entfernt 50&nbsp;% davon.
+        Bleibt der Balken rot, greift die Engine selbst ein.
       </p>
     </div>
   </section>
@@ -366,46 +366,46 @@ footer{border-top:var(--rule);padding:26px 0 40px}
   <section class="statement wrap">
     <div class="statement-grid">
       <div>
-        <h1>You see the damage <em>before</em> it lands.</h1>
+        <h1>Du siehst den Schaden, <em>bevor</em> er dich trifft.</h1>
         <p class="lede">
-          As a Brewmaster, most of the damage you take does not land at once — it drips
-          out over ten seconds. <strong>Monk Stagger Display</strong> shows that pool in
-          real time and tells you when purifying is worth the most, instead of leaving you to guess.
+          Als Braumeister landet ein Großteil des Schadens nicht sofort, sondern tropft
+          über zehn Sekunden nach. <strong>Monk Stagger Display</strong> zeigt diesen Pool
+          in Echtzeit und sagt dir, wann Läutern den größten Wert hat – statt dich raten zu lassen.
         </p>
         <div class="cta-row">
-          <a class="btn btn-key" href="https://github.com/Basti2405/MonkStaggerDisplay/releases/latest">Download the latest release</a>
-          <a class="btn" href="https://github.com/Basti2405/MonkStaggerDisplay">View the source</a>
+          <a class="btn btn-key" href="https://github.com/Basti2405/MonkStaggerDisplay/releases/latest">Aktuelles Release laden</a>
+          <a class="btn" href="https://github.com/Basti2405/MonkStaggerDisplay">Quellcode ansehen</a>
         </div>
       </div>
       <dl class="facts">
         <div class="fact"><dt>Client</dt><dd>Retail 12.1.0 · Interface 120100</dd></div>
-        <div class="fact"><dt>Specialization</dt><dd>Brewmaster · 268</dd></div>
-        <div class="fact"><dt>Dependencies</dt><dd>none</dd></div>
-        <div class="fact"><dt>Size</dt><dd>3 Lua files · 1 TOC</dd></div>
-        <div class="fact"><dt>License</dt><dd>MIT</dd></div>
+        <div class="fact"><dt>Spezialisierung</dt><dd>Braumeister · 268</dd></div>
+        <div class="fact"><dt>Abhängigkeiten</dt><dd>keine</dd></div>
+        <div class="fact"><dt>Umfang</dt><dd>3 Lua-Dateien · 1 TOC</dd></div>
+        <div class="fact"><dt>Lizenz</dt><dd>MIT</dd></div>
       </dl>
     </div>
   </section>
 
-  <!-- ============ Thresholds ============ -->
+  <!-- ============ Schwellen ============ -->
   <section class="bands wrap" id="thresholds">
-    <p class="eyebrow">Thresholds · share of maximum health</p>
-    <h2>Three tiers, freely adjustable</h2>
+    <p class="eyebrow">Schwellen · Anteil am maximalen Leben</p>
+    <h2>Drei Stufen, frei verschiebbar</h2>
     <div class="band-row" style="margin-top:28px">
       <div class="band band-l">
-        <div class="band-pct">&lt; 30%</div>
-        <h3 class="band-name">Light</h3>
-        <p>The pool drains off harmlessly. Purifying here throws away a charge.</p>
+        <div class="band-pct">&lt; 30 %</div>
+        <h3 class="band-name">Leicht</h3>
+        <p>Der Pool tropft harmlos ab. Läutern hier verschenkt eine Ladung.</p>
       </div>
       <div class="band band-m">
-        <div class="band-pct">30 – 60%</div>
-        <h3 class="band-name">Moderate</h3>
-        <p>Keep an eye on it. The engine speaks up if a charge would otherwise overflow.</p>
+        <div class="band-pct">30 – 60 %</div>
+        <h3 class="band-name">Mittel</h3>
+        <p>Beobachten. Die Engine meldet sich, wenn eine Ladung sonst überläuft.</p>
       </div>
       <div class="band band-h">
-        <div class="band-pct">&gt; 60%</div>
-        <h3 class="band-name">Heavy</h3>
-        <p>Purifying now removes damage you can feel. The bar pulses.</p>
+        <div class="band-pct">&gt; 60 %</div>
+        <h3 class="band-name">Schwer</h3>
+        <p>Läutern entfernt jetzt spürbar Schaden. Der Balken pulsiert.</p>
       </div>
     </div>
   </section>
@@ -414,51 +414,51 @@ footer{border-top:var(--rule);padding:26px 0 40px}
   <section class="rules wrap" id="engine">
     <div class="rules-head">
       <div>
-        <p class="eyebrow">Recommendation engine</p>
-        <h2>When it speaks up</h2>
+        <p class="eyebrow">Empfehlungs-Engine</p>
+        <h2>Wann sie sich meldet</h2>
       </div>
       <p>
-        Five triggers, each one switchable on its own and adjustable in its values.
-        They are heuristics, not a simulation — the defaults are shown below.
+        Fünf Auslöser, jeder einzeln abschaltbar und in den Werten anpassbar.
+        Sie sind Heuristiken, keine Simulation – die Startwerte stehen unten.
       </p>
     </div>
 
     <div class="rule-list">
       <div class="rule">
-        <div class="rule-tag">Emergency</div>
+        <div class="rule-tag">Notfall</div>
         <div>
-          <h3>Health below 40%, stagger active</h3>
-          <p>Overrides everything else. What counts here is not efficiency but that you stay on your feet.</p>
+          <h3>Leben unter 40 %, Stagger aktiv</h3>
+          <p>Überschreibt alles andere. Hier zählt nicht der Wirkungsgrad, sondern dass du stehen bleibst.</p>
         </div>
       </div>
       <div class="rule">
-        <div class="rule-tag">Threshold</div>
+        <div class="rule-tag">Schwelle</div>
         <div>
-          <h3>Above 60% stagger <em>and</em> at least 5% health returned</h3>
-          <p>The second condition is the actual point: a high percentage on its own says nothing
-             if the pool is small. The engine speaks up only once purifying removes real damage.</p>
+          <h3>Über 60 % Stagger <em>und</em> mindestens 5 % Leben Ertrag</h3>
+          <p>Die zweite Bedingung ist der eigentliche Punkt: Ein hoher Prozentwert allein sagt nichts,
+             wenn der Pool klein ist. Erst wenn Läutern echten Schaden entfernt, meldet sich die Engine.</p>
         </div>
       </div>
       <div class="rule">
-        <div class="rule-tag warn">Charge protection</div>
+        <div class="rule-tag warn">Ladungsschutz</div>
         <div>
-          <h3>A charge is about to go to waste</h3>
-          <p>Purifying Brew has two charges. If the next one is about to come up, recharge time is lost —
-             the engine pushes you beforehand, as long as the return still counts.</p>
+          <h3>Eine Ladung würde verfallen</h3>
+          <p>Läuterndes Gebräu hat zwei Ladungen. Läuft die nächste gleich auf, geht Regeneration verloren –
+             die Engine drängt vorher, sofern der Ertrag noch zählt.</p>
         </div>
       </div>
       <div class="rule">
-        <div class="rule-tag">Shield</div>
+        <div class="rule-tag">Schild</div>
         <div>
-          <h3>Enough stacks of Purified Chi</h3>
-          <p>Celestial Brew is recommended from three stacks upwards, so the shield is not spent below its value.</p>
+          <h3>Genug Stapel Geläutertes Chi</h3>
+          <p>Himmlisches Gebräu wird ab drei Stapeln empfohlen, damit der Schild nicht unter Wert eingesetzt wird.</p>
         </div>
       </div>
       <div class="rule">
-        <div class="rule-tag">Shield emergency</div>
+        <div class="rule-tag">Schild-Notfall</div>
         <div>
-          <h3>Health below 50%</h3>
-          <p>Regardless of stacks. A small shield now beats a large one you never live to see.</p>
+          <h3>Leben unter 50 %</h3>
+          <p>Unabhängig von den Stapeln. Ein kleiner Schild jetzt schlägt einen großen, den du nicht mehr erlebst.</p>
         </div>
       </div>
     </div>
@@ -467,38 +467,38 @@ footer{border-top:var(--rule);padding:26px 0 40px}
   <!-- ============ Installation ============ -->
   <section class="install wrap" id="install">
     <p class="eyebrow">Installation</p>
-    <h2>In the game in two minutes</h2>
+    <h2>In zwei Minuten im Spiel</h2>
 
     <div class="install-grid">
       <div>
-        <div class="step-k">Archive</div>
-        <h3>Unpack the ZIP</h3>
-        <p>Download the release and drop the folder it contains so that this structure results:</p>
+        <div class="step-k">Archiv</div>
+        <h3>ZIP entpacken</h3>
+        <p>Das Release herunterladen und den enthaltenen Ordner so ablegen, dass diese Struktur entsteht:</p>
 <pre><span class="c">World of Warcraft/_retail_/Interface/AddOns/</span>
 └── <span class="p">MonkStaggerDisplay/</span>
     ├── MonkStaggerDisplay.toc
     ├── Config.lua
     ├── Display.lua
     └── Core.lua</pre>
-        <p>Then type <code style="font-family:var(--mono);color:var(--jade)">/reload</code> in the game.
-           The display only appears on a Brewmaster.</p>
+        <p>Danach im Spiel <code style="font-family:var(--mono);color:var(--jade)">/reload</code>.
+           Die Anzeige erscheint nur als Braumeister.</p>
       </div>
 
       <div>
-        <div class="step-k">From the repo</div>
-        <h3>A script instead of manual work</h3>
-        <p>If you cloned the repo, copy across directly:</p>
+        <div class="step-k">Aus dem Repo</div>
+        <h3>Skript statt Handarbeit</h3>
+        <p>Wer das Repo geklont hat, kopiert direkt:</p>
 <pre>git clone https://github.com/Basti2405/MonkStaggerDisplay
-<span class="c"># pass the path to your AddOns folder</span>
-scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
+<span class="c"># Pfad zum AddOns-Ordner übergeben</span>
+scripts/install.sh <span class="p">"/pfad/Interface/AddOns"</span></pre>
 
-        <div class="step-k" style="margin-top:26px">Commands</div>
+        <div class="step-k" style="margin-top:26px">Bedienung</div>
         <div class="cmds">
-          <div class="cmd"><code>/msd</code><span>Open the settings</span></div>
-          <div class="cmd"><code>/msd unlock</code><span>Unlock the anchor for moving</span></div>
-          <div class="cmd"><code>/msd test</code><span>Test display with a simulated curve</span></div>
-          <div class="cmd"><code>/msd status</code><span>Print the state to chat</span></div>
-          <div class="cmd"><code>/stagger</code><span>identical to /msd</span></div>
+          <div class="cmd"><code>/msd</code><span>Einstellungen öffnen</span></div>
+          <div class="cmd"><code>/msd unlock</code><span>Anker zum Verschieben freigeben</span></div>
+          <div class="cmd"><code>/msd test</code><span>Testanzeige mit simuliertem Verlauf</span></div>
+          <div class="cmd"><code>/msd status</code><span>Zustand im Chat ausgeben</span></div>
+          <div class="cmd"><code>/stagger</code><span>identisch zu /msd</span></div>
         </div>
       </div>
     </div>
@@ -510,7 +510,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
     <span>MIT · Basti2405 · v1.0.5</span>
     <span>
       <a href="https://github.com/Basti2405/MonkStaggerDisplay">Repository</a> ·
-      <a href="https://github.com/Basti2405/MonkStaggerDisplay/issues">Report a bug</a> ·
+      <a href="https://github.com/Basti2405/MonkStaggerDisplay/issues">Fehler melden</a> ·
       <a href="https://github.com/Basti2405/MonkStaggerDisplay/releases">Releases</a>
     </span>
   </div>
@@ -520,15 +520,15 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
 (function(){
   "use strict";
 
-  // The same values the addon ships as its defaults.
+  // Dieselben Werte wie in den Standardeinstellungen des AddOns.
   var MAX_HP        = 1000000,
-      WINDOW        = 10,     // seconds until the pool is empty
-      TH_LIGHT      = 30,     // % of max health
+      WINDOW        = 10,     // Sekunden bis der Pool leer ist
+      TH_LIGHT      = 30,     // % max. Leben
       TH_MEDIUM     = 60,
-      PURIFY_REMOVE = 0.50,   // share that purifying removes
-      MIN_GAIN_PCT  = 5,      // minimum return in % of max health
+      PURIFY_REMOVE = 0.50,   // Anteil, den Läutern entfernt
+      MIN_GAIN_PCT  = 5,      // Mindestertrag in % max. Leben
       MAX_CHARGES   = 2,
-      RECHARGE      = 15;     // seconds
+      RECHARGE      = 15;     // Sekunden
 
   var el = {
     fill:    document.getElementById("fill"),
@@ -552,13 +552,13 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
   var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
   function fmt(n){
-    if (n >= 1000000) return (n/1000000).toFixed(2) + "M";
-    if (n >= 1000)    return (n/1000).toFixed(1) + "k";
+    if (n >= 1000000) return (n/1000000).toFixed(2).replace(".",",") + "M";
+    if (n >= 1000)    return (n/1000).toFixed(1).replace(".",",") + "k";
     return String(Math.round(n));
   }
 
   function takeHit(){
-    // 4-13% of maximum health lands in the pool
+    // 4–13 % des maximalen Lebens landen im Pool
     pool += MAX_HP * (0.04 + Math.random() * 0.09);
     if (pool > MAX_HP * 1.15) pool = MAX_HP * 1.15;
   }
@@ -577,19 +577,19 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
         gain = pool * PURIFY_REMOVE / MAX_HP * 100;
 
     var color, name;
-    if (pct >= TH_MEDIUM)     { color = "var(--s-heavy)"; name = "Heavy"; }
-    else if (pct >= TH_LIGHT) { color = "var(--s-med)";   name = "Moderate"; }
-    else                      { color = "var(--s-light)"; name = "Light"; }
+    if (pct >= TH_MEDIUM)     { color = "var(--s-heavy)"; name = "Schwer"; }
+    else if (pct >= TH_LIGHT) { color = "var(--s-med)";   name = "Mittel"; }
+    else                      { color = "var(--s-light)"; name = "Leicht"; }
 
     el.fill.style.width = Math.min(pct, 100) + "%";
     el.fill.style.backgroundColor = color;
-    el.pct.textContent   = pct.toFixed(1) + "%";
+    el.pct.textContent   = pct.toFixed(1).replace(".", ",") + " %";
     el.abs.textContent   = fmt(pool);
     el.dtps.textContent  = fmt(dtps) + "/s";
     el.level.textContent = name;
     el.level.style.color = color;
 
-    // Recommend: threshold reached AND the return is worth it
+    // Empfehlung: Schwelle erreicht UND der Ertrag lohnt sich
     var recommend = charges >= 1 && pct >= TH_MEDIUM && gain >= MIN_GAIN_PCT;
 
     el.meter.classList.toggle("is-urgent", recommend);
@@ -598,9 +598,9 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
     el.chargeP.textContent = charges;
     el.prompt.classList.toggle("is-live", recommend);
     el.prompt.textContent = recommend
-      ? "Purifying removes " + fmt(pool * PURIFY_REMOVE) + " (" + gain.toFixed(1) + "% health)"
-      : (charges < 1 ? "No charge available — the pool drains."
-                     : "Engine quiet — nothing to do.");
+      ? "Läutern entfernt " + fmt(pool * PURIFY_REMOVE) + " (" + gain.toFixed(1).replace(".", ",") + " % Leben)"
+      : (charges < 1 ? "Keine Ladung verfügbar – Pool läuft ab."
+                     : "Engine ruhig – kein Handlungsbedarf.");
     return recommend;
   }
 
@@ -611,7 +611,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
     last = now;
     if (paused) { render(); return; }
 
-    // Drain across the ten-second window
+    // Abbau über das Zehn-Sekunden-Fenster
     if (pool > 0){
       pool -= (pool / WINDOW) * dt;
       if (pool < MAX_HP * 0.0008) pool = 0;
@@ -629,7 +629,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
     if (nextHit <= 0){ takeHit(); nextHit = 0.6 + Math.random() * 1.0; }
 
     var recommend = render();
-    // If nobody reacts, the engine steps in after 3.5 s.
+    // Reagiert niemand, greift die Engine nach 3,5 s selbst ein.
     if (recommend){ recFor += dt; if (recFor > 3.5) purify(); } else { recFor = 0; }
   }
 
@@ -637,15 +637,15 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
   el.btnPur.addEventListener("click", function(){ purify(); render(); });
   el.btnPause.addEventListener("click", function(){
     paused = !paused;
-    el.btnPause.textContent = paused ? "Resume" : "Pause";
+    el.btnPause.textContent = paused ? "Weiter" : "Pause";
     el.btnPause.setAttribute("aria-pressed", String(paused));
   });
 
   if (reduced){
-    // Without motion: a still frame that still says something.
+    // Ohne Bewegung: ein aussagekräftiger Standbild-Zustand.
     pool = MAX_HP * 0.72;
     render();
-    el.btnPause.textContent = "Resume";
+    el.btnPause.textContent = "Weiter";
     paused = true;
   } else {
     pool = MAX_HP * 0.18;
