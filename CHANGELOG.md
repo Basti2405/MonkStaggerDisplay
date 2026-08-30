@@ -6,6 +6,33 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.6] – 2026-08-30
+
+### Behoben
+- **Die Leiste blendete sich im Kampf immer wieder aus.** Ist der Stagger ein
+  gesperrter Wert, fielen beide Auffangnetze der Sichtbarkeit gleichzeitig aus:
+  `state.stagger > 0` wurde nie wahr, und `lastDamageTime` wird am **Anstieg**
+  des Staggers gesetzt — bei konstant 0 also nie. Übrig blieb allein das
+  Kampfflag. Fällt das zwischen zwei Pulls für einen Moment ab, verschwand die
+  Leiste mitten im Geschehen.
+- **Der entsperrte Anker war auf einer anderen Spezialisierung unsichtbar.**
+  `Display:ApplyLockState` setzt beim Entsperren korrekt Alpha 1 —
+  `Config:SetLocked` ruft unmittelbar danach `ForceUpdate` auf, und `Core:Refresh`
+  blendete außerhalb der Braumeister-Spezialisierung bedingungslos auf 0. Die
+  Leiste ließ sich damit nur als Braumeister positionieren.
+
+### Geändert
+- Neues Feld `state.staggerUnknown`: Ein gesperrter Stagger gilt nicht mehr als
+  „kein Stagger". Dieselbe Linie wie beim Leben in 1.0.1 und den Ladungen in
+  1.0.5 — ein nicht lesbarer Wert ist keine Null. Für die Sichtbarkeit zählt
+  „nicht lesbar" wie „Stagger vorhanden", statt die Leiste auszublenden.
+- `Core:Refresh` blendet außerhalb der Braumeister-Spezialisierung nur noch bei
+  **gesperrtem** Anker aus. Ein Zustand wird weiterhin nicht aufgebaut, die
+  Unit-Abfragen bleiben also aus (die Vorsichtsmaßnahme aus 1.0.1 bleibt).
+- Die Sichtbarkeit hatte bis hierher **keine einzige Prüfung** — das ist der
+  Grund, warum beides durchrutschte. Acht Testfälle decken jetzt entsperrten
+  Anker, Spezialisierungswechsel, gesperrten Stagger und den Normalfall ab.
+
 ## [1.0.5] – 2026-08-30
 
 ### Behoben

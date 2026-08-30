@@ -168,7 +168,14 @@ function Core:BuildState()
     -- healthPct bleibt nil - also ausdruecklich "unbekannt" statt "null".
     local maxHealth = ns.SafeNumber(UnitHealthMax("player")) or 0
     local health    = ns.SafeNumber(UnitHealth("player"))
-    local stagger   = ns.SafeNumber(UnitStagger and UnitStagger("player")) or 0
+
+    -- Ist der Stagger gesperrt, waere 0 eine Behauptung. Der Unterschied
+    -- zaehlt fuer die Sichtbarkeit: "kein Stagger" blendet aus,
+    -- "nicht lesbar" darf es nicht.
+    local staggerRaw = UnitStagger and UnitStagger("player") or nil
+    local staggerVal = ns.SafeNumber(staggerRaw)
+    local stagger    = staggerVal or 0
+    state.staggerUnknown = (staggerRaw ~= nil) and (staggerVal == nil)
 
     state.maxHealth  = maxHealth
     state.health     = health
@@ -309,8 +316,15 @@ function Core:UpdateVisibility(state, instant)
     end
 
     local recentDamage = (GetTime() - (self.lastDamageTime or 0)) <= (visibility.damageGrace or 0)
+
+    -- Ist der Stagger nicht lesbar, faellt sonst beides gleichzeitig aus:
+    -- "Stagger > 0" ist nie wahr, und lastDamageTime wird nie gesetzt, weil
+    -- es am Stagger-Anstieg haengt. Uebrig bliebe allein das Kampfflag --
+    -- faellt das zwischen zwei Pulls ab, verschwindet die Leiste.
+    local staggered = state.stagger > 0 or state.staggerUnknown
+
     local active = state.inCombat
-                   or (visibility.showWhenStaggered and state.stagger > 0)
+                   or (visibility.showWhenStaggered and staggered)
                    or recentDamage
 
     if active then
@@ -330,9 +344,14 @@ function Core:Refresh(instant)
     if not ns.Display or not ns.Display.initialized then return end
 
     -- Ausserhalb der Braumeister-Spezialisierung gibt es nichts zu berechnen.
-    -- Ausblenden genuegt; die Unit-Abfragen bleiben dann ganz aus.
+    -- Die Unit-Abfragen bleiben deshalb ganz aus (siehe 1.0.1).
+    --
+    -- Ausnahme: Bei entsperrtem Anker muss die Leiste sichtbar bleiben, sonst
+    -- laesst sie sich auf einer anderen Spezialisierung nicht positionieren.
+    -- ApplyLockState setzt dafuer Alpha 1 -- ohne diese Zeile hat der direkt
+    -- danach laufende ForceUpdate es sofort wieder auf 0 gezogen.
     if not self.isBrewmaster and not self.testMode then
-        ns.Display:SetTargetAlpha(0, instant)
+        ns.Display:SetTargetAlpha(ns.db.locked and 0 or 1, instant)
         return
     end
 

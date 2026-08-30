@@ -336,6 +336,53 @@ end
 check("LEARNED_SPELL_IN_TAB wird nicht mehr angemeldet",
       core.__events["LEARNED_SPELL_IN_TAB"] == nil)
 
+print("\n== Sichtbarkeit ==")
+-- Gemeldet aus dem Spiel: "blendet sich immer wieder aus". Zwei Ursachen,
+-- beide vorher ungeprueft - die Sichtbarkeit hatte gar keine Testabdeckung.
+
+local function sichtbar()
+    ns.Core:Refresh(true)
+    return (ns.Display.targetAlpha or 0) > 0
+end
+
+local _locked, _spec = ns.db.locked, ns.Core.isBrewmaster
+local _stagger, _combat = _G.UnitStagger, _G.UnitAffectingCombat
+
+-- 1. Entsperrter Anker: ApplyLockState setzt Alpha 1, der unmittelbar
+--    folgende ForceUpdate hat es auf einer anderen Spec sofort auf 0 gezogen.
+ns.db.locked = false
+ns.Core.isBrewmaster = true
+check("entsperrter Anker, Braumeister: sichtbar", sichtbar())
+ns.Core.isBrewmaster = false
+check("entsperrter Anker, andere Spezialisierung: sichtbar", sichtbar())
+ns.db.locked = true
+check("gesperrter Anker, andere Spezialisierung: aus", not sichtbar())
+
+-- 2. Gesperrter Stagger: "Stagger > 0" wird nie wahr, und lastDamageTime
+--    haengt am Stagger-Anstieg, wird also auch nie gesetzt. Uebrig blieb
+--    allein das Kampfflag - faellt das zwischen zwei Pulls ab, war die
+--    Leiste weg, obwohl der Kampf weiterlief.
+ns.Core.isBrewmaster = true
+_G.UnitStagger = function() return MarkSecret(450000) end
+ns.Core.lastStagger, ns.Core.lastDamageTime = 0, 0
+
+_G.UnitAffectingCombat = function() return true end
+check("Stagger gesperrt, im Kampf: sichtbar", sichtbar())
+
+_G.UnitAffectingCombat = function() return false end
+check("Stagger gesperrt, Kampfflag faellt ab: sichtbar", sichtbar())
+check("staggerUnknown ist gesetzt", ns.Core:BuildState().staggerUnknown == true)
+
+-- 3. Lesbarer Stagger von 0 bleibt "kein Stagger" und blendet weiterhin aus.
+_G.UnitStagger = function() return 0 end
+ns.Core.lastDamageTime = 0
+local st = ns.Core:BuildState()
+check("Stagger lesbar 0: staggerUnknown false", st.staggerUnknown == false)
+check("Stagger lesbar 0, kein Kampf: aus", not sichtbar())
+
+_G.UnitStagger, _G.UnitAffectingCombat = _stagger, _combat
+ns.db.locked, ns.Core.isBrewmaster = _locked, _spec
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")
