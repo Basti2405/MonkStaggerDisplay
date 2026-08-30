@@ -4,7 +4,7 @@
 ## Notes: Real-time stagger tracking with Purifying/Celestial Brew recommendations for Brewmaster Monks.
 ## Notes-deDE: Echtzeit-Staggeranzeige mit Läuterndem-/Himmlischem-Gebräu-Empfehlung für Braumeister-Mönche.
 ## Author: Basti2405
-## Version: 1.0.3
+## Version: 1.0.4
 ## SavedVariables: MonkStaggerDB
 ## IconTexture: Interface\Icons\ability_monk_brewmaster_spec
 ## Category: Combat

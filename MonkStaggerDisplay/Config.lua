@@ -958,7 +958,8 @@ function Config:RegisterSettings()
 
     if Settings and Settings.RegisterCanvasLayoutCategory then
         local category = Settings.RegisterCanvasLayoutCategory(panel, ns.ADDON_TITLE)
-        category.ID = ns.ADDON_TITLE
+        -- Wichtig: category.ID NICHT ueberschreiben. Blizzard vergibt hier eine
+        -- Zahl, und genau die erwartet C_SettingsUtil.OpenSettingsPanel spaeter.
         Settings.RegisterAddOnCategory(category)
         self.category = category
     elseif InterfaceOptions_AddCategory then
@@ -982,17 +983,37 @@ function Config:RegisterSettings()
     return self.category
 end
 
+--- Numerische ID einer Settings-Kategorie ermitteln.
+--- Seit Midnight (12.0) reicht Settings.OpenToCategory den Wert unveraendert
+--- an C_SettingsUtil.OpenSettingsPanel weiter, und das akzeptiert nur eine
+--- Zahl im Int32-Bereich. Ein Anzeigename als ID wirft dort einen Fehler.
+local function GetCategoryID(category)
+    if type(category) ~= "table" then return nil end
+
+    local id
+    if category.GetID then
+        local ok, value = pcall(category.GetID, category)
+        if ok then id = value end
+    end
+    if id == nil then id = category.ID end
+
+    return type(id) == "number" and id or nil
+end
+
 --- Optionsfenster oeffnen.
 function Config:OpenSettings()
     if not self.category then self:RegisterSettings() end
 
     if Settings and Settings.OpenToCategory then
-        local id = self.category and (self.category.GetID and self.category:GetID() or self.category.ID)
-        Settings.OpenToCategory(id or ns.ADDON_TITLE)
-    elseif InterfaceOptionsFrame_OpenToCategory then
+        local id = GetCategoryID(self.category)
+        if id and pcall(Settings.OpenToCategory, id) then return end
+        -- Aeltere Clients loesen den Anzeigenamen selbst auf.
+        if pcall(Settings.OpenToCategory, ns.ADDON_TITLE) then return end
+    elseif InterfaceOptionsFrame_OpenToCategory and self.panel then
         InterfaceOptionsFrame_OpenToCategory(self.panel)
         InterfaceOptionsFrame_OpenToCategory(self.panel) -- Blizzard-Bug: zweimal noetig
-    else
-        ns.Print("Optionsfenster konnte nicht geöffnet werden.")
+        return
     end
+
+    ns.Print("Optionsfenster konnte nicht geöffnet werden.")
 end

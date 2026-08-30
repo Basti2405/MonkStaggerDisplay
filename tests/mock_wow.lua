@@ -104,12 +104,34 @@ BackdropTemplateMixin = {}
 STANDARD_TEXT_FONT = "Fonts\\FRIZQT__.TTF"
 YES, NO = "Ja", "Nein"
 
+-- Die Settings-Attrappe verhaelt sich wie der Client ab Midnight (12.0):
+-- Blizzard vergibt eine numerische Kategorie-ID, und OpenToCategory reicht
+-- den Wert unveraendert an C_SettingsUtil.OpenSettingsPanel weiter, das nur
+-- eine Zahl im Int32-Bereich akzeptiert.
 Settings = {
+    __nextCategoryID = 1000,
+    __openedID = nil,
     RegisterCanvasLayoutCategory = function(frame, title)
-        return { ID = title, GetID = function(self) return self.ID end }
+        Settings.__nextCategoryID = Settings.__nextCategoryID + 1
+        return {
+            ID     = Settings.__nextCategoryID,
+            name   = title,
+            frame  = frame,
+            GetID  = function(self) return self.ID end,
+        }
     end,
     RegisterAddOnCategory = function() end,
-    OpenToCategory = function(id) print("   [Settings] geöffnet: " .. tostring(id)) end,
+    OpenToCategory = function(id)
+        if type(id) ~= "number" then
+            error(string.format(
+                "bad argument #1 to 'OpenSettingsPanel' (outside of expected range "
+                .. "-2147483648 to 2147483647 - Usage: C_SettingsUtil.OpenSettingsPanel("
+                .. "[openToCategoryID, scrollToElementName])) -- erhalten: %s (%s)",
+                tostring(id), type(id)), 2)
+        end
+        Settings.__openedID = id
+        print("   [Settings] geöffnet: " .. tostring(id))
+    end,
 }
 
 function StaticPopup_Show(which) print("   [Popup] " .. tostring(which)) end

@@ -119,6 +119,18 @@ check("Refresh fehlerfrei", pcall(panel.Refresh, panel))
 check("OnRefresh-Hook vorhanden", type(panel.OnRefresh) == "function")
 check("OnDefault-Hook vorhanden", type(panel.OnDefault) == "function")
 
+-- Gemeldet aus dem Spiel: bad argument #1 to 'OpenSettingsPanel'. Die
+-- Kategorie-ID wurde nach der Registrierung mit dem Anzeigenamen ueber-
+-- schrieben; C_SettingsUtil.OpenSettingsPanel erwartet aber eine Zahl.
+check("Kategorie behaelt Blizzards numerische ID",
+      type(ns.Config.category and ns.Config.category:GetID()) == "number",
+      "ID = " .. tostring(ns.Config.category and ns.Config.category:GetID()))
+Settings.__openedID = nil
+local okOpen, errOpen = pcall(ns.Config.OpenSettings, ns.Config)
+check("OpenSettings wirft nicht", okOpen, okOpen and "" or tostring(errOpen))
+check("OpenToCategory bekam die numerische ID",
+      Settings.__openedID == (ns.Config.category and ns.Config.category:GetID()))
+
 print("\n== Persistenz ==")
 ns.db.position.x, ns.db.position.y = 123, -456
 check("Position wird in SavedVariables gehalten",

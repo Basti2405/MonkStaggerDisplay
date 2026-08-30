@@ -6,6 +6,30 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.4] – 2026-08-30
+
+### Behoben
+- **`bad argument #1 to 'OpenSettingsPanel'` beim Öffnen der Einstellungen.**
+  `RegisterSettings` hat die von Blizzard vergebene Kategorie-ID direkt nach
+  der Registrierung mit dem Anzeigenamen überschrieben
+  (`category.ID = ns.ADDON_TITLE`). In Midnight reicht
+  `Settings.OpenToCategory` diesen Wert unverändert an
+  `C_SettingsUtil.OpenSettingsPanel` weiter, und das akzeptiert
+  ausschließlich eine Zahl im Int32-Bereich. Betroffen waren `/msd`,
+  `/msd config` und der Klick im Addon-Kompartiment.
+
+### Geändert
+- Die Kategorie-ID bleibt jetzt unangetastet. `OpenSettings` liest sie über
+  `category:GetID()`, prüft mit `type(id) == "number"` und fällt nur bei
+  einer nicht-numerischen ID auf den Anzeigenamen zurück – für ältere
+  Clients, die den Namen selbst auflösen. Beide Aufrufe sind in `pcall`
+  gekapselt; erst wenn keiner greift, erscheint eine Meldung im Chat.
+- Der Zweig für `InterfaceOptionsFrame_OpenToCategory` prüft zusätzlich, ob
+  `self.panel` existiert, statt `nil` weiterzureichen.
+- Die Test-Attrappe vergibt jetzt wie das Spiel eine numerische Kategorie-ID
+  und wirft in `OpenToCategory` bei allem anderen. Drei Testfälle prüfen die
+  ID, den fehlerfreien Aufruf und den tatsächlich übergebenen Wert.
+
 ## [1.0.3] – 2026-08-30
 
 ### Behoben
