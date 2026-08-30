@@ -59,14 +59,14 @@ Die Module kommunizieren ausschließlich über die private Addon-Tabelle (`local
 | Mittel | 30 – 60 % | Gelb |
 | Schwer | > 60 % | Rot |
 
-**Empfehlungs-Engine** — Hebt Läuterndes bzw. Himmlisches Gebräu durch Pulsieren und/oder Leuchten hervor:
+**Empfehlungs-Engine** — Hebt Läuterndes Gebräu bzw. Himmlische Infusion durch Pulsieren und/oder Leuchten hervor:
 
 *Läuterndes Gebräu* (119582)
 1. **Notfall** – Leben unter der Notfallschwelle (Standard 40 %) und Stagger aktiv.
 2. **Regulär** – Stagger über der Schwelle (Standard 60 % max. Leben) **und** die Läuterung entfernt mindestens den Mindestwert (Standard 5 % max. Leben). Der zweite Teil verhindert Empfehlungen, die kaum defensiven Wert haben.
 3. **Ladungsschutz** – Eine Ladung würde durch das Ladungslimit verfallen und die Läuterung wäre noch spürbar.
 
-*Himmlisches Gebräu* (322507)
+*Himmlische Infusion* (322507)
 1. Genügend Stapel **Geläutertes Chi** (386963) für einen maximalen Schild (Standard 3).
 2. Leben unter der Notfallschwelle (Standard 50 %).
 
@@ -145,7 +145,7 @@ und veröffentlicht es als GitHub-Release.
   Geläutertes Chi arbeiten unverändert. `/msd status` weist aus, was gerade gesperrt
   ist. Betrifft alle Fassungen ab 1.0.1.
 - **Geläutertes Chi (386963):** Die Spell-ID konnte nicht gegen den Client verifiziert
-  werden. Findet das AddOn die Aura nicht, bleibt für Himmlisches Gebräu nur der
+  werden. Findet das AddOn die Aura nicht, bleibt für die Himmlische Infusion nur der
   Notfallpfad über das Leben — der wiederum ausfällt, solange dieses gesperrt ist.
   Die ID steht als Konstante in `Config.lua`.
 - Die Empfehlungswerte sind Heuristiken, keine Simulation. Insbesondere „Läuterndes

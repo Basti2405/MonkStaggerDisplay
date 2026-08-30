@@ -4,7 +4,7 @@
     Verantwortlich fuer saemtliche Rahmen und Texturen:
       * beweglicher Ankerrahmen mit persistenter Position
       * Stagger-Leiste inkl. Schwellenmarkierungen und Text
-      * Gebraeu-Symbole (Laeuterndes / Himmlisches Gebraeu) mit Abklingzeit
+      * Symbole (Laeuterndes Gebraeu / Himmlische Infusion) mit Abklingzeit
       * Hervorhebung (Pulsieren / Leuchten) der Empfehlungs-Engine
       * weiches Ein- und Ausblenden
 ----------------------------------------------------------------------------]]

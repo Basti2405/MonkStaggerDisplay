@@ -32,6 +32,20 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Die Sichtbarkeit hatte bis hierher **keine einzige Prüfung** — das ist der
   Grund, warum beides durchrutschte. Acht Testfälle decken jetzt entsperrten
   Anker, Spezialisierungswechsel, gesperrten Stagger und den Normalfall ab.
+- **Himmlisches Gebräu heißt in Midnight „Himmlische Infusion".** Die Spell-ID
+  (322507) ist unverändert, Tooltip und Symbol kommen ohnehin über
+  `SetSpellByID` bzw. `GetSpellIcon` aus dem Spiel und waren nie falsch —
+  betroffen waren die fest eingetragenen Texte im Optionsfenster, im README
+  und auf der Projektseite.
+- **Aufklapplisten statt Durchschalt-Knöpfen.** „Leistentextur" und
+  „Hervorhebung" waren Knöpfe, die einen Wert nach dem anderen durchschalteten;
+  man musste klicken, um zu sehen, was es überhaupt gibt. Beide sind jetzt
+  Aufklapplisten, die Texturliste mit einer Probe der Textur je Eintrag.
+  Bewusst ohne Blizzards Dropdown-API — die hat zwischen den Erweiterungen
+  mehrfach gewechselt, und Schieberegler wie Farbwähler sind hier aus
+  demselben Grund selbst gebaut. Die Liste liegt in einer eigenen, höheren
+  Ebene; genau daran lag es, dass die Menüs in TacticalCalloutDock 1.0
+  durchsichtig wirkten.
 
 ## [1.0.5] – 2026-08-30
 

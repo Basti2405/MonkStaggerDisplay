@@ -29,11 +29,11 @@ ns.STAGGER_WINDOW = 10
 
 ns.SPELL = {
     PURIFYING_BREW   = 119582,  -- Laeuterndes Gebraeu
-    CELESTIAL_BREW   = 322507,  -- Himmlisches Gebraeu
+    CELESTIAL_BREW   = 322507,  -- Himmlische Infusion (bis Midnight: Himmlisches Gebraeu)
     STAGGER_LIGHT    = 124275,  -- Leichter Stagger (Aura)
     STAGGER_MODERATE = 124274,  -- Mittlerer Stagger (Aura)
     STAGGER_HEAVY    = 124273,  -- Schwerer Stagger (Aura)
-    PURIFIED_CHI     = 386963,  -- Gelaeutertes Chi (verstaerkt Himmlisches Gebraeu)
+    PURIFIED_CHI     = 386963,  -- Gelaeutertes Chi (verstaerkt die Himmlische Infusion)
 }
 
 ns.LEVEL = { LIGHT = 1, MEDIUM = 2, HEAVY = 3 }
@@ -631,8 +631,33 @@ local function CreateColorSwatch(panel, label, tooltip, getter, setter, hasOpaci
     return container
 end
 
---- Durchschalt-Button (Ersatz fuer Dropdown, versionsunabhaengig).
-local function CreateCycleButton(panel, label, values, displayMap, getter, setter)
+--- Aufklappliste.
+--- ------------------------------------------------------------------------
+--- Bewusst ohne Blizzards Dropdown-API: die hat zwischen den Erweiterungen
+--- mehrfach gewechselt (UIDropDownMenu -> MenuUtil), und Schieberegler wie
+--- Farbwaehler sind hier aus demselben Grund selbst gebaut.
+---
+--- Die Liste haengt an UIParent statt am Formular und liegt eine Ebene
+--- hoeher. Innerhalb einer Ebene entscheidet nicht die Farbe, sondern der
+--- Rahmen-Level -- und den erbt ein Kind vom Elternrahmen. Eine Liste im
+--- Formular bekaeme damit einen niedrigeren Level als die Felder, ueber die
+--- sie sich legt, und WoW zeichnete diese darueber. Genau dieser Fehler war
+--- in TacticalCalloutDock 1.1.0 der Grund fuer "durchsichtige" Menues.
+---
+--- vorschau(textur, wert) darf optional eine Probe im Eintrag zeichnen.
+local offeneListe
+
+local function SchliesseListe()
+    if offeneListe then
+        offeneListe:Hide()
+        offeneListe = nil
+    end
+end
+ns.SchliesseAufklappliste = SchliesseListe
+
+local EINTRAG_HOEHE = 22
+
+local function CreateDropdown(panel, label, values, displayMap, getter, setter, vorschau)
     local container = CreateFrame("Frame", nil, panel.content)
     container:SetSize(WIDGET_WIDTH, 26)
 
@@ -644,21 +669,114 @@ local function CreateCycleButton(panel, label, values, displayMap, getter, sette
     button:SetSize(190, 22)
     button:SetPoint("RIGHT", 0, 0)
 
-    local function refresh()
-        local current = getter()
-        button:SetText((displayMap and displayMap[current]) or tostring(current))
+    -- Beschriftung nach links, damit der Pfeil rechts frei steht
+    local btnText = button:GetFontString()
+    if btnText then
+        btnText:ClearAllPoints()
+        btnText:SetPoint("LEFT", 8, 0)
+        btnText:SetPoint("RIGHT", -18, 0)
+        btnText:SetJustifyH("LEFT")
     end
 
-    button:SetScript("OnClick", function()
-        local current = getter()
-        local index = 1
-        for i, v in ipairs(values) do
-            if v == current then index = i break end
+    local pfeil = button:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+    pfeil:SetPoint("RIGHT", -7, 0)
+
+    local liste = CreateFrame("Frame", nil, UIParent)
+    liste:SetFrameStrata("FULLSCREEN_DIALOG")
+    liste:SetToplevel(true)
+    liste:SetHeight(#values * EINTRAG_HOEHE + 2)
+    liste:Hide()
+
+    local grund = liste:CreateTexture(nil, "BACKGROUND")
+    grund:SetAllPoints()
+    grund:SetColorTexture(0.055, 0.065, 0.085, 0.98)
+
+    -- Vier eigene Striche statt SetBackdrop: dessen edgeSize laeuft durch
+    -- dieselbe Rundung und liegt zur Haelfte ausserhalb des Rahmens.
+    for _, kante in ipairs({ { "TOPLEFT", "TOPRIGHT", false }, { "BOTTOMLEFT", "BOTTOMRIGHT", false },
+                             { "TOPLEFT", "BOTTOMLEFT", true }, { "TOPRIGHT", "BOTTOMRIGHT", true } }) do
+        local strich = liste:CreateTexture(nil, "BORDER")
+        strich:SetColorTexture(0.42, 0.45, 0.52, 0.95)
+        strich:SetPoint(kante[1])
+        strich:SetPoint(kante[2])
+        if kante[3] then strich:SetWidth(1) else strich:SetHeight(1) end
+    end
+
+    -- Faengt Klicks neben der Liste ab. Kind der Liste, damit es mit ihr
+    -- erscheint und verschwindet, aber eine Ebene tiefer.
+    local faenger = CreateFrame("Button", nil, liste)
+    faenger:SetFrameStrata("FULLSCREEN")
+    faenger:SetAllPoints(UIParent)
+    faenger:SetScript("OnClick", SchliesseListe)
+
+    local refresh   -- Vorwaertsdeklaration: die Eintraege rufen sie auf
+
+    local eintraege = {}
+    for i, wert in ipairs(values) do
+        local e = CreateFrame("Button", nil, liste)
+        e:SetHeight(EINTRAG_HOEHE)
+        e:SetPoint("TOPLEFT", 1, -((i - 1) * EINTRAG_HOEHE) - 1)
+        e:SetPoint("TOPRIGHT", -1, -((i - 1) * EINTRAG_HOEHE) - 1)
+
+        local hell = e:CreateTexture(nil, "HIGHLIGHT")
+        hell:SetAllPoints()
+        hell:SetColorTexture(0.24, 0.45, 0.70, 0.55)
+
+        local haken = e:CreateFontString(nil, "OVERLAY", "GameFontNormalSmall")
+        haken:SetPoint("LEFT", 7, 0)
+
+        local name = e:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+        name:SetPoint("LEFT", 21, 0)
+        name:SetText((displayMap and displayMap[wert]) or tostring(wert))
+        name:SetJustifyH("LEFT")
+
+        if vorschau then
+            local probe = e:CreateTexture(nil, "ARTWORK")
+            probe:SetPoint("RIGHT", -7, 0)
+            probe:SetSize(64, 9)
+            vorschau(probe, wert)
         end
-        index = index % #values + 1
-        setter(values[index])
+
+        e:SetScript("OnClick", function()
+            setter(wert)
+            SchliesseListe()
+            refresh()
+            ns.Config:Notify()
+        end)
+
+        eintraege[i] = { rahmen = e, wert = wert, haken = haken, name = name }
+    end
+
+    refresh = function()
+        local aktuell = getter()
+        button:SetText((displayMap and displayMap[aktuell]) or tostring(aktuell))
+        pfeil:SetText(liste:IsShown() and "|cff9d9d9d^|r" or "|cff9d9d9dv|r")
+        for _, eintrag in ipairs(eintraege) do
+            local gewaehlt = (eintrag.wert == aktuell)
+            eintrag.haken:SetText(gewaehlt and "|cff00ff96*|r" or "")
+            eintrag.name:SetTextColor(gewaehlt and 1 or 0.78,
+                                      gewaehlt and 1 or 0.78,
+                                      gewaehlt and 1 or 0.78)
+        end
+    end
+
+    button:SetScript("OnClick", function(self)
+        if offeneListe == liste then
+            SchliesseListe()
+        else
+            SchliesseListe()
+            liste:ClearAllPoints()
+            liste:SetPoint("TOPLEFT", self, "BOTTOMLEFT", 0, -2)
+            liste:SetWidth(self:GetWidth())
+            liste:Show()
+            offeneListe = liste
+        end
         refresh()
-        ns.Config:Notify()
+    end)
+
+    liste:SetScript("OnHide", function()
+        if offeneListe == liste then offeneListe = nil end
+        refresh()
     end)
 
     container.__height = 30
@@ -778,11 +896,21 @@ function Config:BuildOptionsPanel()
         function() return db().bar.maxPct end,
         function(v) db().bar.maxPct = v end,
         function(v) return v .. " % max. Leben" end), 8)
-    add(CreateCycleButton(panel, "Leistentextur",
+    add(CreateDropdown(panel, "Leistentextur",
         { 1, 2, 3 },
         { [1] = ns.BAR_TEXTURES[1].name, [2] = ns.BAR_TEXTURES[2].name, [3] = ns.BAR_TEXTURES[3].name },
         function() return db().bar.texture end,
-        function(v) db().bar.texture = v end), 8)
+        function(v) db().bar.texture = v end,
+        -- Probe in der Farbe der mittleren Stufe: so sieht man die Textur,
+        -- statt sie am Namen raten zu muessen.
+        function(probe, wert)
+            local eintrag = ns.BAR_TEXTURES[wert]
+            if eintrag then probe:SetTexture(eintrag.path) end
+            local farbe = ns.db and ns.db.colors and ns.db.colors.medium
+            probe:SetVertexColor(farbe and farbe[1] or 0.95,
+                                 farbe and farbe[2] or 0.82,
+                                 farbe and farbe[3] or 0.15)
+        end), 8)
     add(CreateCheckbox(panel, "Schwellenmarkierungen anzeigen", nil,
         function() return db().bar.showTicks end,
         function(v) db().bar.showTicks = v end), 8)
@@ -790,7 +918,7 @@ function Config:BuildOptionsPanel()
         function() return db().bar.showSpark end,
         function(v) db().bar.showSpark = v end), 8)
     add(CreateCheckbox(panel, "Gebräu-Symbole anzeigen",
-        "Zeigt Läuterndes Gebräu und Himmlisches Gebräu mit Abklingzeit unter der Leiste.",
+        "Zeigt Läuterndes Gebräu und Himmlische Infusion mit Abklingzeit unter der Leiste.",
         function() return db().bar.showBrews end,
         function(v) db().bar.showBrews = v end), 8)
     add(CreateSlider(panel, "Größe der Gebräu-Symbole", 16, 64, 1,
@@ -892,7 +1020,7 @@ function Config:BuildOptionsPanel()
     -- --- Empfehlungen ---
     add(CreateHeader(content, "Empfehlungs-Engine"), 0, 4)
     add(CreateDescription(content,
-        "Hebt Läuterndes Gebräu bzw. Himmlisches Gebräu hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
+        "Hebt Läuterndes Gebräu bzw. Himmlische Infusion hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
     add(CreateCheckbox(panel, "Empfehlungen aktiviert", nil,
         function() return db().recommend.enabled end,
         function(v) db().recommend.enabled = v end), 8)
@@ -920,7 +1048,7 @@ function Config:BuildOptionsPanel()
         function() return db().recommend.emergencyHealthPct end,
         function(v) db().recommend.emergencyHealthPct = v end,
         function(v) return v .. " % Leben" end), 8)
-    add(CreateCheckbox(panel, "Himmlisches Gebräu empfehlen", nil,
+    add(CreateCheckbox(panel, "Himmlische Infusion empfehlen", nil,
         function() return db().recommend.celestialEnabled end,
         function(v) db().recommend.celestialEnabled = v end), 8)
     add(CreateSlider(panel, "Benötigte Stapel Geläutertes Chi", 1, 10, 1,
@@ -931,7 +1059,7 @@ function Config:BuildOptionsPanel()
         function() return db().recommend.celestialEmergencyHealthPct end,
         function(v) db().recommend.celestialEmergencyHealthPct = v end,
         function(v) return v .. " % Leben" end), 8)
-    add(CreateCycleButton(panel, "Hervorhebung", ns.GLOW_STYLES, ns.GLOW_STYLE_NAME,
+    add(CreateDropdown(panel, "Hervorhebung", ns.GLOW_STYLES, ns.GLOW_STYLE_NAME,
         function() return db().recommend.glowStyle end,
         function(v) db().recommend.glowStyle = v end), 8)
     add(CreateCheckbox(panel, "Signalton bei Empfehlung", nil,

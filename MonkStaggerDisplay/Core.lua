@@ -4,7 +4,7 @@
     Herzstueck des Addons:
       * Ereignisverarbeitung und Spezialisierungspruefung (Braumeister, 268)
       * Zustandsermittlung (Stagger, Leben, Gebraeu-Abklingzeiten, Auren)
-      * Empfehlungs-Engine fuer Laeuterndes / Himmlisches Gebraeu
+      * Empfehlungs-Engine fuer Laeuterndes Gebraeu / Himmlische Infusion
       * Sichtbarkeitssteuerung (Kampf, eingehender Schaden, Ruhezustand)
       * Slash-Befehle /msd und /stagger
 ----------------------------------------------------------------------------]]
@@ -218,7 +218,7 @@ end
       c) Ladungsschutz: eine Ladung wuerde gleich verfallen und die Laeuterung
          waere trotzdem noch spuerbar
 
-    Himmlisches Gebraeu wird empfohlen, wenn ...
+    Die Himmlische Infusion wird empfohlen, wenn ...
       a) genug Stapel "Geläutertes Chi" fuer einen maximalen Schild vorliegen
       b) das Leben unter die Notfallschwelle faellt
 ]]
@@ -272,7 +272,7 @@ function Core:EvaluateRecommendations(state)
     end
 
     ------------------------------------------------------------------
-    -- Himmlisches Gebräu
+    -- Himmlische Infusion
     ------------------------------------------------------------------
     local celestial = state.celestial
     if cfg.celestialEnabled and celestial.known and celestial.ready then
