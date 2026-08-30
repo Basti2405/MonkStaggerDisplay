@@ -51,16 +51,31 @@ local function FillSpellInfo(info, spellID)
     if not info.known then return info end
 
     local now = GetTime()
-    local start, duration, enabled = ns.GetSpellCooldownInfo(spellID)
-    info.start, info.duration, info.enabled = start, duration, enabled
 
-    local charges, maxCharges, chargeStart, chargeDuration = ns.GetSpellChargeInfo(spellID)
-    if charges and maxCharges then
+    -- Seit Midnight (12.0) sperrt Blizzard Abklingzeit- und Ladungswerte,
+    -- sobald Addon-Code die Ausfuehrung taintet. Die Wrapper liefern dafuer
+    -- nil; die raw*-Felder tragen die Originalwerte und gehen ungelesen an
+    -- Blizzards Cooldown-Anzeige weiter. Ist ein Wert nicht lesbar, wird das
+    -- ueber info.unknown gemeldet -- geraten wird nicht.
+    local start, duration, enabled, _, rawStart, rawDuration =
+        ns.GetSpellCooldownInfo(spellID)
+    info.start, info.duration, info.enabled = start, duration, enabled
+    info.rawStart, info.rawDuration = rawStart, rawDuration
+
+    local hasCharges, charges, maxCharges, chargeStart, chargeDuration,
+          rawChargeStart, rawChargeDuration = ns.GetSpellChargeInfo(spellID)
+    info.rawChargeStart, info.rawChargeDuration = rawChargeStart, rawChargeDuration
+
+    if hasCharges then
         info.charges        = charges
         info.maxCharges     = maxCharges
         info.chargeStart    = chargeStart
         info.chargeDuration = chargeDuration
-        if charges < maxCharges and chargeDuration and chargeDuration > 0 then
+
+        if charges == nil or maxCharges == nil then
+            info.unknown = true
+        elseif charges < maxCharges and chargeStart
+               and chargeDuration and chargeDuration > 0 then
             info.timeToNextCharge = math.max((chargeStart + chargeDuration) - now, 0)
         else
             info.timeToNextCharge = 0
@@ -68,15 +83,21 @@ local function FillSpellInfo(info, spellID)
     else
         -- Zauber ohne Ladungssystem als 0/1 Ladungen abbilden
         info.maxCharges = 1
-        local remaining = 0
-        if start and start > 0 and duration and duration > GCD_THRESHOLD then
-            remaining = math.max((start + duration) - now, 0)
+        if start == nil or duration == nil then
+            info.unknown = true
+        else
+            local remaining = 0
+            if start > 0 and duration > GCD_THRESHOLD then
+                remaining = math.max((start + duration) - now, 0)
+            end
+            info.charges          = (remaining > 0) and 0 or 1
+            info.timeToNextCharge = remaining
         end
-        info.charges          = (remaining > 0) and 0 or 1
-        info.timeToNextCharge = remaining
     end
 
-    info.ready = (info.charges or 0) >= 1
+    -- Bei unbekanntem Ladungsstand gilt der Zauber nicht als bereit. Das
+    -- unterdrueckt jede Empfehlung, statt eine auf geratenen Werten zu geben.
+    info.ready = (not info.unknown) and (info.charges or 0) >= 1
     return info
 end
 
@@ -479,6 +500,17 @@ function Core:PrintStatus()
         ns.db.thresholds.light, ns.db.thresholds.medium, ns.db.thresholds.medium))
     print(string.format("  Position:    %s  x=%d  y=%d",
         ns.db.position.point, ns.db.position.x, ns.db.position.y))
+
+    -- Lesbarkeit der gesperrten Werte ausweisen. Ohne diese Zeile wirkt ein
+    -- Client, der Leben oder Ladungen sperrt, schlicht kaputt.
+    local gesperrt = {}
+    if state.healthPct == nil                  then gesperrt[#gesperrt + 1] = "Leben" end
+    if state.purify and state.purify.unknown   then gesperrt[#gesperrt + 1] = "Läutern-Ladungen" end
+    if state.celestial and state.celestial.unknown then gesperrt[#gesperrt + 1] = "Schild-Abklingzeit" end
+    if #gesperrt > 0 then
+        print("  |cffffaa00Gesperrt:|r    " .. table.concat(gesperrt, ", ")
+              .. " – dafür gibt es keine Empfehlung")
+    end
 end
 
 local function PrintHelp()

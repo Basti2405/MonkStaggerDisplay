@@ -6,6 +6,41 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 
 ## [Unveröffentlicht]
 
+## [1.0.5] – 2026-08-30
+
+### Behoben
+- **`attempt to compare local 'charges' (a secret number value)` in
+  `Core.lua:63`.** Der Sperrvermerk aus 1.0.1 betraf nicht nur `UnitHealth`:
+  `C_Spell.GetSpellCharges` liefert `currentCharges`, `cooldownStartTime` und
+  `cooldownDuration` ebenfalls gesperrt aus, `maxCharges` dagegen als normale
+  Zahl. Der Vergleich `charges < maxCharges` warf deshalb mitten in
+  `FillSpellInfo` — und riss `BuildState`, `Refresh` und damit die gesamte
+  Aktualisierung mit. Betroffen war auch `C_Spell.GetSpellCooldown`.
+
+### Geändert
+- `ns.GetSpellCooldownInfo` und `ns.GetSpellChargeInfo` filtern ihre
+  Zahlenwerte jetzt an der Quelle über `ns.SafeNumber`. Keine Aufrufstelle
+  kann den Fehler dadurch noch auslösen.
+- `ns.GetSpellChargeInfo` meldet zusätzlich als erstes Ergebnis, **ob** der
+  Zauber Ladungen besitzt. Ohne diese Trennung würde ein Gebräu mit
+  gesperrtem Ladungsstand fälschlich als Zauber ohne Ladungssystem behandelt
+  und über die Abklingzeit auf „bereit" geraten.
+- Neues Feld `info.unknown`: Ist der Ladungsstand nicht lesbar, gilt das
+  Gebräu **nicht** als bereit und es gibt keine Empfehlung — dieselbe Linie
+  wie beim Leben in 1.0.1, lieber keine Aussage als eine geratene.
+- Die Rohwerte bleiben in `info.raw*` erhalten und gehen ungelesen an
+  Blizzards `Cooldown:SetCooldown`. Die Wischanzeige der Abklingzeit
+  funktioniert damit weiter, obwohl das Addon die Zahlen nicht kennt; der
+  Aufruf ist in `pcall` gekapselt.
+- Der Ladungszähler zeigt bei gesperrtem Wert `?` statt einer erfundenen `0`,
+  und das Symbol wird nicht mehr ausgegraut — „nicht verfügbar" wäre eine
+  Behauptung, die sich gerade nicht treffen lässt.
+- `/msd status` weist gesperrte Werte jetzt aus. Ohne diese Zeile wirkt ein
+  Client, der Leben oder Ladungen sperrt, schlicht defekt.
+- Die Test-Attrappe kann per `C_Spell.__secret` auf das Midnight-Verhalten
+  umschalten; ein Testblock prüft Absturzfreiheit, ausbleibende Empfehlungen,
+  die Beschriftung und die Rückkehr zum Normalbetrieb.
+
 ## [1.0.4] – 2026-08-30
 
 ### Behoben

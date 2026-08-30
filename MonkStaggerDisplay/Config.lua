@@ -77,36 +77,65 @@ function ns.GetPlayerSpecID()
     return id
 end
 
---- Zauber-Abklingzeit. Rueckgabe: start, duration, enabled, modRate
+--- Zauber-Abklingzeit.
+--- Rueckgabe: start, duration, enabled, modRate, rawStart, rawDuration
+---
+--- start und duration laufen durch ns.SafeNumber: sperrt Midnight den Wert,
+--- kommt nil an statt eines Objekts, mit dem keine Aufrufstelle rechnen darf.
+--- rawStart/rawDuration tragen die Originalwerte. Sie sind ausschliesslich zur
+--- Weitergabe an Blizzards Cooldown:SetCooldown gedacht -- dort werden sie nur
+--- dargestellt, nicht gelesen -- und duerfen nie in eine Rechnung geraten.
 function ns.GetSpellCooldownInfo(spellID)
+    local start, duration, enabled, modRate = 0, 0, true, 1
+
     if C_Spell and C_Spell.GetSpellCooldown then
         local info = C_Spell.GetSpellCooldown(spellID)
         if info then
-            return info.startTime or 0, info.duration or 0, info.isEnabled ~= false, info.modRate or 1
+            start    = info.startTime or 0
+            duration = info.duration or 0
+            enabled  = info.isEnabled ~= false
+            modRate  = info.modRate or 1
         end
-        return 0, 0, true, 1
+    elseif _G.GetSpellCooldown then
+        local s, d, e, m = _G.GetSpellCooldown(spellID)
+        start    = s or 0
+        duration = d or 0
+        enabled  = e ~= 0 and e ~= false
+        modRate  = m or 1
     end
-    if _G.GetSpellCooldown then
-        local start, duration, enabled, modRate = _G.GetSpellCooldown(spellID)
-        return start or 0, duration or 0, enabled ~= 0 and enabled ~= false, modRate or 1
-    end
-    return 0, 0, true, 1
+
+    return ns.SafeNumber(start), ns.SafeNumber(duration), enabled,
+           ns.SafeNumber(modRate) or 1, start, duration
 end
 
---- Ladungen eines Zaubers. Rueckgabe: charges, maxCharges, start, duration, modRate (oder nil)
+--- Ladungen eines Zaubers.
+--- Rueckgabe: hasCharges, charges, maxCharges, chargeStart, chargeDuration,
+---            rawChargeStart, rawChargeDuration
+---
+--- hasCharges sagt, ob der Zauber ueberhaupt ein Ladungssystem besitzt. Diese
+--- Auskunft bleibt auch dann verwertbar, wenn die Zahlen selbst gesperrt sind
+--- -- sonst wuerde ein Gebraeu mit gesperrtem Ladungsstand faelschlich als
+--- Zauber ohne Ladungen behandelt. charges und die Zeitwerte sind wie oben
+--- ueber ns.SafeNumber gefiltert, raw* sind wieder nur fuer die Anzeige.
 function ns.GetSpellChargeInfo(spellID)
+    local charges, maxCharges, chargeStart, chargeDuration
+
     if C_Spell and C_Spell.GetSpellCharges then
         local info = C_Spell.GetSpellCharges(spellID)
-        if info then
-            return info.currentCharges, info.maxCharges, info.cooldownStartTime,
-                   info.cooldownDuration, info.chargeModRate or 1
-        end
-        return nil
+        if not info then return false end
+        charges, maxCharges  = info.currentCharges, info.maxCharges
+        chargeStart          = info.cooldownStartTime
+        chargeDuration       = info.cooldownDuration
+    elseif _G.GetSpellCharges then
+        charges, maxCharges, chargeStart, chargeDuration = _G.GetSpellCharges(spellID)
+        if charges == nil and maxCharges == nil then return false end
+    else
+        return false
     end
-    if _G.GetSpellCharges then
-        return _G.GetSpellCharges(spellID)
-    end
-    return nil
+
+    return true, ns.SafeNumber(charges), ns.SafeNumber(maxCharges),
+           ns.SafeNumber(chargeStart), ns.SafeNumber(chargeDuration),
+           chargeStart, chargeDuration
 end
 
 --- Zaubersymbol.

@@ -26,7 +26,11 @@ local function makeMethod(self, key)
         return function() return newObject(key) end
     end
     if key == "GetMinMaxValues" then return function() return 0, 100 end end
-    if key == "GetText"         then return function() return "" end end
+    -- Mitschreiben, damit Tests pruefen koennen, was die Anzeige bekommt.
+    if key == "SetCooldown"     then return function(s, st, d) s.__cooldown = { st, d } end end
+    if key == "Clear"           then return function(s) s.__cooldown = nil end end
+    if key == "SetText"         then return function(s, t) s.__text = t end end
+    if key == "GetText"         then return function(s) return s.__text or "" end end
     if key == "GetName"         then return function(s) return s.__name end end
     if key == "GetParent"       then return function(s) return s.__parent end end
     return function() return nil end
@@ -138,14 +142,24 @@ function StaticPopup_Show(which) print("   [Popup] " .. tostring(which)) end
 function PlaySound() end
 
 C_AddOns   = { GetAddOnMetadata = function(_, key) return key == "Version" and "1.0.0" or nil end }
+-- __secret schaltet die Attrappe auf das Midnight-Verhalten um: die
+-- veraenderlichen Zahlen kommen gesperrt zurueck, maxCharges bleibt eine
+-- normale Zahl -- genau so, wie es der Fehlerbericht aus dem Spiel zeigt.
 C_Spell    = {
-    GetSpellCooldown = function() return { startTime = 0, duration = 0, isEnabled = true, modRate = 1 } end,
+    __secret = false,
+    GetSpellCooldown = function()
+        local start, duration = 0, 0
+        if C_Spell.__secret then start, duration = MarkSecret(start), MarkSecret(duration) end
+        return { startTime = start, duration = duration, isEnabled = true, modRate = 1 }
+    end,
     GetSpellCharges  = function(id)
-        if id == 119582 then
-            return { currentCharges = 1, maxCharges = 2, cooldownStartTime = 100,
-                     cooldownDuration = 15, chargeModRate = 1 }
+        if id ~= 119582 then return nil end
+        local charges, start, duration = 1, 100, 15
+        if C_Spell.__secret then
+            charges, start, duration = MarkSecret(charges), MarkSecret(start), MarkSecret(duration)
         end
-        return nil
+        return { currentCharges = charges, maxCharges = 2, cooldownStartTime = start,
+                 cooldownDuration = duration, chargeModRate = 1 }
     end,
     GetSpellTexture  = function() return "Interface\\Icons\\ability_monk_brewmaster_spec" end,
 }
@@ -181,6 +195,11 @@ end
 -- als normale Zahl nachgebildet, sondern als Objekt, dessen Rechenoperationen
 -- denselben Fehler werfen wie im Spiel. Sonst wuerde der Test den gemeldeten
 -- Fehler gar nicht reproduzieren koennen.
+--
+-- Einschraenkung: Bei < und <= ruft Lua 5.1 die Metamethode nur auf, wenn
+-- beide Operanden denselben Typ haben. Ein Vergleich mit einer Zahl wirft
+-- deshalb "attempt to compare table with number" statt der Sperrmeldung -- er
+-- wirft aber an genau derselben Stelle, und darauf kommt es im Test an.
 local gesperrt = {}
 local function sperrfehler()
     error("attempt to perform arithmetic on a secret number value, "

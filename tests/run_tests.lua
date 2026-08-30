@@ -194,6 +194,71 @@ ns.Core:BuildState()
 check("mit lesbarem Leben greift der Notfall wieder",
       ns.Core.state.rec.purify == true, tostring(ns.Core.state.rec.purifyReason))
 ns.db.recommend.emergencyHealthPct = 40
+
+print("\n== Gesperrte Zauberwerte (Ladungen & Abklingzeit) ==")
+-- Gemeldet aus dem Spiel: attempt to compare local 'charges' (a secret number
+-- value) in FillSpellInfo. currentCharges/cooldownStartTime/cooldownDuration
+-- sind gesperrt, maxCharges bleibt lesbar.
+ns.db.recommend.celestialEmergencyHealthPct = 40
+C_Spell.__secret = true
+
+local geheimeLadung = C_Spell.GetSpellCharges(119582).currentCharges
+check("Attrappe liefert die Ladungen gesperrt", issecretvalue(geheimeLadung) == true)
+check("Vergleich darauf wirft (wie im Spiel)",
+      not pcall(function() return geheimeLadung < 2 end))
+
+local okFill, errFill = pcall(function() return ns.Core:BuildState() end)
+check("BuildState wirft nicht mehr", okFill, okFill and "" or tostring(errFill))
+
+local purify = ns.Core.state.purify
+check("Gebräu gilt weiter als bekannt", purify.known == true)
+check("Ladungssystem wird erkannt", purify.maxCharges == 2)
+check("Ladungsstand als unbekannt markiert", purify.unknown == true)
+check("charges bleibt nil statt geraten", purify.charges == nil)
+check("nicht als bereit ausgegeben", purify.ready == false)
+check("Rohwert für die Cooldown-Anzeige erhalten",
+      issecretvalue(purify.rawChargeStart) == true)
+
+-- Keine Empfehlung auf unbekannter Grundlage, obwohl der Stagger hoch ist.
+UnitStagger = function() return 350000 end
+ns.Core:BuildState()
+check("Stagger wird weiter berechnet", ns.Core.state.staggerPct > 0,
+      string.format("%.1f%%", ns.Core.state.staggerPct))
+check("keine Läutern-Empfehlung bei unbekannten Ladungen",
+      not ns.Core.state.rec.purify, tostring(ns.Core.state.rec.purifyReason))
+check("keine Schild-Empfehlung bei unbekannter Abklingzeit",
+      not ns.Core.state.rec.celestial, tostring(ns.Core.state.rec.celestialReason))
+
+-- Die Anzeige muss trotzdem durchlaufen und ehrlich beschriften.
+local okDisp, errDisp = pcall(function() ns.Display:Update(ns.Core.state) end)
+check("Display:Update wirft nicht", okDisp, okDisp and "" or tostring(errDisp))
+check("Ladungszähler zeigt ? statt 0",
+      ns.Display.purifyIcon.count.__text == "?",
+      tostring(ns.Display.purifyIcon.count.__text))
+check("Cooldown-Anzeige bekommt den Rohwert",
+      ns.Display.purifyIcon.cooldown.__cooldown ~= nil
+      and issecretvalue(ns.Display.purifyIcon.cooldown.__cooldown[1]) == true)
+
+-- /msd status muss den Zustand benennen statt ihn zu verschweigen.
+local statusZeilen = {}
+local echtesPrint = print
+print = function(...) statusZeilen[#statusZeilen + 1] = table.concat({ tostringall(...) }, " ") end
+local okStatus = pcall(function() ns.Core:PrintStatus() end)
+print = echtesPrint
+check("PrintStatus wirft nicht", okStatus)
+check("Status weist die gesperrten Werte aus",
+      string.find(table.concat(statusZeilen, "\n"), "Gesperrt:") ~= nil)
+
+-- Zurueck auf lesbare Werte: alles muss wieder normal arbeiten.
+C_Spell.__secret = false
+ns.Core:BuildState()
+check("mit lesbaren Werten wieder normale Ladungen",
+      ns.Core.state.purify.charges == 1 and ns.Core.state.purify.unknown == nil)
+check("und wieder als bereit gemeldet", ns.Core.state.purify.ready == true)
+ns.Display:Update(ns.Core.state)
+check("Zähler zeigt wieder die Zahl", ns.Display.purifyIcon.count.__text == 1,
+      tostring(ns.Display.purifyIcon.count.__text))
+ns.db.recommend.celestialEmergencyHealthPct = 20
 ns.db.recommend.celestialEmergencyHealthPct = 50
 UnitHealth = function() return 620000 end
 UnitStagger = function() return 450000 end

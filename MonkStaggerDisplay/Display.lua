@@ -504,24 +504,41 @@ function Display:UpdateBrewIcon(icon, info, recommended, reason)
     icon.reason = reason
 
     -- Abklingzeit / Ladungen
-    if info.chargeStart and info.chargeDuration and info.chargeDuration > 0
-       and info.charges and info.maxCharges and info.charges < info.maxCharges then
-        icon.cooldown:SetCooldown(info.chargeStart, info.chargeDuration)
+    -- Bei gesperrten Werten (info.unknown) bleiben nur die Rohwerte. Blizzards
+    -- Cooldown-Anzeige nimmt sie entgegen, weil sie dort dargestellt und nicht
+    -- gelesen werden; der pcall faengt Clients ab, die das anders handhaben.
+    local cdStart, cdDuration
+    if info.unknown then
+        cdStart    = info.rawChargeStart or info.rawStart
+        cdDuration = info.rawChargeDuration or info.rawDuration
+    elseif info.chargeStart and info.chargeDuration and info.chargeDuration > 0
+           and info.charges and info.maxCharges and info.charges < info.maxCharges then
+        cdStart, cdDuration = info.chargeStart, info.chargeDuration
     elseif info.start and info.duration and info.duration > 1.5 and info.charges == 0 then
-        icon.cooldown:SetCooldown(info.start, info.duration)
+        cdStart, cdDuration = info.start, info.duration
+    end
+
+    if cdStart and cdDuration
+       and pcall(icon.cooldown.SetCooldown, icon.cooldown, cdStart, cdDuration) then
+        -- gesetzt
     else
         icon.cooldown:Clear()
     end
 
-    if info.maxCharges and info.maxCharges > 1 then
+    if info.unknown and info.maxCharges and info.maxCharges > 1 then
+        -- Fragezeichen statt einer erfundenen Null.
+        icon.count:SetText("?")
+        icon.count:SetTextColor(0.7, 0.7, 0.7)
+    elseif info.maxCharges and info.maxCharges > 1 then
         icon.count:SetText(info.charges or 0)
         icon.count:SetTextColor(1, 1, 1)
     else
         icon.count:SetText("")
     end
 
-    -- Verfuegbarkeit visualisieren
-    local usable = (info.charges or 0) >= 1
+    -- Verfuegbarkeit visualisieren. Bei unbekanntem Ladungsstand wird nicht
+    -- ausgegraut -- das waere die Behauptung "nicht verfuegbar".
+    local usable = info.unknown or (info.charges or 0) >= 1
     icon.icon:SetDesaturated(not usable)
     icon.icon:SetVertexColor(usable and 1 or 0.55, usable and 1 or 0.55, usable and 1 or 0.55)
 
