@@ -28,7 +28,7 @@ ns.SPEC_ID_BREWMASTER = 268
 ns.STAGGER_WINDOW = 10
 
 ns.SPELL = {
-    PURIFYING_BREW     = 119582,  -- Laeuterndes Gebraeu
+    PURIFYING_BREW     = 119582,  -- Reinigendes Gebraeu (bis Midnight: Laeuterndes Gebraeu)
     CELESTIAL_BREW     = 322507,  -- Himmlisches Gebraeu
     CELESTIAL_INFUSION = 1241059, -- Himmlische Infusion
     STAGGER_LIGHT      = 124275,  -- Leichter Stagger (Aura)
@@ -268,7 +268,7 @@ end
 --==========================================================================
 
 ns.defaults = {
-    dbVersion = 1,
+    dbVersion = 2,
     enabled   = true,
     locked    = true,
     debug     = false,
@@ -322,7 +322,12 @@ ns.defaults = {
 
     recommend = {
         enabled                  = true,
-        purifyRemovalPct         = 50,   -- Anteil des Staggers, den Laeuterndes Gebraeu entfernt
+        -- Reinigendes Gebraeu entfernt laut Tooltip "bis zu 60% Eures
+        -- gestaffelten Schadens oder mindestens 8% Eurer maximalen
+        -- Gesundheit". Der Sockelbetrag greift, wenn der Anteil darunter
+        -- liegt -- bei kleinem Stagger ist er der groessere Teil.
+        purifyRemovalPct         = 60,   -- Anteil des Staggers
+        purifyMinFloorPct        = 8,    -- Sockel in % max. Leben
         purifyThresholdPct       = 60,   -- ab welchem Stagger-% empfohlen wird
         purifyMinGainPct         = 5,    -- Mindestwert der Entfernung in % max. Leben
         capProtection            = true, -- vor ueberlaufenden Ladungen warnen
@@ -375,6 +380,16 @@ function Config:Initialize()
     -- Konsistenz: mittlere Schwelle muss ueber der leichten liegen
     if ns.db.thresholds.medium <= ns.db.thresholds.light then
         ns.db.thresholds.medium = math.min(100, ns.db.thresholds.light + 5)
+    end
+
+    -- Migration auf dbVersion 2: In Midnight entfernt Reinigendes Gebraeu
+    -- 60 % statt 50 % des Staggers. applyDefaults ergaenzt nur fehlende
+    -- Schluessel -- ein gespeichertes 50 bliebe also stehen und die
+    -- Empfehlungen waeren dauerhaft zu zurueckhaltend. Nur wer exakt den
+    -- alten Standardwert hat, bekommt den neuen; ein selbst eingestellter
+    -- Wert bleibt unangetastet.
+    if (ns.db.dbVersion or 1) < 2 and ns.db.recommend.purifyRemovalPct == 50 then
+        ns.db.recommend.purifyRemovalPct = ns.defaults.recommend.purifyRemovalPct
     end
 
     ns.db.dbVersion = ns.defaults.dbVersion
@@ -941,7 +956,7 @@ function Config:BuildOptionsPanel()
         function() return db().bar.showSpark end,
         function(v) db().bar.showSpark = v end), 8)
     add(CreateCheckbox(panel, "Gebräu-Symbole anzeigen",
-        "Zeigt Läuterndes Gebräu und den Schild-Zauber mit Abklingzeit unter der Leiste.",
+        "Zeigt Reinigendes Gebräu und den Schild-Zauber mit Abklingzeit unter der Leiste.",
         function() return db().bar.showBrews end,
         function(v) db().bar.showBrews = v end), 8)
     add(CreateSlider(panel, "Größe der Gebräu-Symbole", 16, 64, 1,
@@ -1043,31 +1058,35 @@ function Config:BuildOptionsPanel()
     -- --- Empfehlungen ---
     add(CreateHeader(content, "Empfehlungs-Engine"), 0, 4)
     add(CreateDescription(content,
-        "Hebt Läuterndes Gebräu bzw. den Schild-Zauber hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
+        "Hebt Reinigendes Gebräu bzw. den Schild-Zauber hervor, sobald der Einsatz den größten Wert bringt."), 8, 8)
     add(CreateCheckbox(panel, "Empfehlungen aktiviert", nil,
         function() return db().recommend.enabled end,
         function(v) db().recommend.enabled = v end), 8)
-    add(CreateSlider(panel, "Läutern ab Stagger", 10, 150, 1,
+    add(CreateSlider(panel, "Reinigen ab Stagger", 10, 150, 1,
         function() return db().recommend.purifyThresholdPct end,
         function(v) db().recommend.purifyThresholdPct = v end,
         function(v) return v .. " % max. Leben" end), 8)
-    add(CreateSlider(panel, "Mindestwert der Läuterung", 1, 40, 0.5,
+    add(CreateSlider(panel, "Mindestwert der Reinigung", 1, 40, 0.5,
         function() return db().recommend.purifyMinGainPct end,
         function(v) db().recommend.purifyMinGainPct = v end,
         function(v) return string.format("%.1f %% max. Leben", v) end), 8)
-    add(CreateSlider(panel, "Läuterndes Gebräu entfernt", 20, 80, 1,
+    add(CreateSlider(panel, "Sockel der Reinigung", 0, 20, 0.5,
+        function() return db().recommend.purifyMinFloorPct end,
+        function(v) db().recommend.purifyMinFloorPct = v end,
+        function(v) return string.format("%.1f %% max. Leben", v) end), 8)
+    add(CreateSlider(panel, "Reinigendes Gebräu entfernt", 20, 80, 1,
         function() return db().recommend.purifyRemovalPct end,
         function(v) db().recommend.purifyRemovalPct = v end,
         function(v) return v .. " % des Staggers" end), 8)
     add(CreateCheckbox(panel, "Vor überlaufenden Ladungen warnen",
-        "Empfiehlt Läuterndes Gebräu, bevor eine Ladung durch das Ladungslimit verfällt.",
+        "Empfiehlt Reinigendes Gebräu, bevor eine Ladung durch das Ladungslimit verfällt.",
         function() return db().recommend.capProtection end,
         function(v) db().recommend.capProtection = v end), 8)
     add(CreateSlider(panel, "Vorlauf für Ladungswarnung", 0.5, 10, 0.5,
         function() return db().recommend.capProtectionWindow end,
         function(v) db().recommend.capProtectionWindow = v end,
         function(v) return string.format("%.1f s", v) end), 8)
-    add(CreateSlider(panel, "Notfall-Läuterung unter", 5, 90, 1,
+    add(CreateSlider(panel, "Notfall-Reinigung unter", 5, 90, 1,
         function() return db().recommend.emergencyHealthPct end,
         function(v) db().recommend.emergencyHealthPct = v end,
         function(v) return v .. " % Leben" end), 8)

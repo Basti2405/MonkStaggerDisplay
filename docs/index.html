@@ -358,7 +358,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <button class="btn" id="btnPause" type="button">Pause</button>
       </div>
       <p class="rig-note">
-        The pool drains over 10&nbsp;seconds. Purifying removes 50% of it.
+        The pool drains over 10&nbsp;seconds. Purifying removes 60% of it — but at least 8% of your maximum health.
         If the bar stays red, the engine steps in by itself.
       </p>
     </div>
@@ -536,10 +536,17 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
       WINDOW        = 10,     // seconds until the pool is empty
       TH_LIGHT      = 30,     // % of max health
       TH_MEDIUM     = 60,
-      PURIFY_REMOVE = 0.50,   // share that purifying removes
+      PURIFY_REMOVE = 0.60,   // share removed by Purifying
+      PURIFY_FLOOR  = 0.08,   // floor as share of max health
       MIN_GAIN_PCT  = 5,      // minimum return in % of max health
       MAX_CHARGES   = 2,
       RECHARGE      = 15;     // seconds
+
+  // "Removes up to 60% of your staggered damage or at least 8% of your
+  // maximum health" -- the floor applies when the share falls below it.
+  function entfernt(pool){
+    return Math.min(pool, Math.max(pool * PURIFY_REMOVE, MAX_HP * PURIFY_FLOOR));
+  }
 
   var el = {
     fill:    document.getElementById("fill"),
@@ -576,7 +583,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
 
   function purify(){
     if (charges < 1 || pool <= 0) return;
-    pool *= (1 - PURIFY_REMOVE);
+    pool -= entfernt(pool);
     charges -= 1;
     if (rechargeLeft <= 0) rechargeLeft = RECHARGE;
     recFor = 0;
@@ -585,7 +592,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
   function render(){
     var pct  = pool / MAX_HP * 100,
         dtps = pool / WINDOW,
-        gain = pool * PURIFY_REMOVE / MAX_HP * 100;
+        gain = entfernt(pool) / MAX_HP * 100;
 
     var color, name;
     if (pct >= TH_MEDIUM)     { color = "var(--s-heavy)"; name = "Heavy"; }
@@ -609,7 +616,7 @@ scripts/install.sh <span class="p">"/path/Interface/AddOns"</span></pre>
     el.chargeP.textContent = charges;
     el.prompt.classList.toggle("is-live", recommend);
     el.prompt.textContent = recommend
-      ? "Purifying removes " + fmt(pool * PURIFY_REMOVE) + " (" + gain.toFixed(1) + "% health)"
+      ? "Purifying removes " + fmt(entfernt(pool)) + " (" + gain.toFixed(1) + "% health)"
       : (charges < 1 ? "No charge available — the pool drains."
                      : "Engine quiet — nothing to do.");
     return recommend;

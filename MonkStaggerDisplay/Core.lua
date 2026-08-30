@@ -4,7 +4,7 @@
     Herzstueck des Addons:
       * Ereignisverarbeitung und Spezialisierungspruefung (Braumeister, 268)
       * Zustandsermittlung (Stagger, Leben, Gebraeu-Abklingzeiten, Auren)
-      * Empfehlungs-Engine fuer Laeuterndes Gebraeu / Himmlische Infusion
+      * Empfehlungs-Engine fuer Reinigendes Gebraeu / Schild-Zauber
       * Sichtbarkeitssteuerung (Kampf, eingehender Schaden, Ruhezustand)
       * Slash-Befehle /msd und /stagger
 ----------------------------------------------------------------------------]]
@@ -146,7 +146,7 @@ function Core:BuildTestState(state)
     wipe(state.rec)
     if state.staggerPct >= ns.db.thresholds.medium then
         state.rec.purify       = true
-        state.rec.purifyReason = "Testmodus: Läutern empfohlen"
+        state.rec.purifyReason = "Testmodus: Reinigen empfohlen"
     end
     if state.purifiedChi >= ns.db.recommend.celestialMinStacks then
         state.rec.celestial       = true
@@ -222,7 +222,7 @@ end
     groessten defensiven Wert hat. Alle Schwellen sind konfigurierbar, damit
     die Heuristik an Spielstil und Balanceaenderungen angepasst werden kann.
 
-    Laeuterndes Gebraeu wird empfohlen, wenn ...
+    Reinigendes Gebraeu wird empfohlen, wenn ...
       a) Notfall: Leben unter der Notfallschwelle und ueberhaupt Stagger aktiv
       b) Regulaer: Stagger ueber der Schwelle UND die Laeuterung entfernt
          mindestens den konfigurierten Mindestwert (in % max. Leben)
@@ -244,11 +244,16 @@ function Core:EvaluateRecommendations(state)
     if maxHealth <= 0 then return rec end
 
     ------------------------------------------------------------------
-    -- Läuterndes Gebräu
+    -- Reinigendes Gebräu
     ------------------------------------------------------------------
     local purify = state.purify
     if purify.known then
-        local removed  = state.stagger * (cfg.purifyRemovalPct / 100)
+        -- "Entfernt bis zu 60% Eures gestaffelten Schadens ODER mindestens
+        -- 8% Eurer maximalen Gesundheit." Der Sockel greift, wenn der Anteil
+        -- darunter liegt; mehr als vorhanden laesst sich nie entfernen.
+        local anteil   = state.stagger * (cfg.purifyRemovalPct / 100)
+        local sockel   = maxHealth * ((cfg.purifyMinFloorPct or 0) / 100)
+        local removed  = math.min(state.stagger, math.max(anteil, sockel))
         local gainPct  = removed / maxHealth * 100
         state.purifyValue    = removed
         state.purifyValuePct = gainPct
@@ -261,12 +266,12 @@ function Core:EvaluateRecommendations(state)
             if state.healthPct and state.healthPct <= cfg.emergencyHealthPct
                and state.staggerPct >= ns.db.thresholds.light then
                 rec.purify       = true
-                rec.purifyReason = string.format("Notfall – Läutern (%.0f%% Leben)", state.healthPct)
+                rec.purifyReason = string.format("Notfall – Reinigen (%.0f%% Leben)", state.healthPct)
 
             elseif state.staggerPct >= cfg.purifyThresholdPct
                    and gainPct >= cfg.purifyMinGainPct then
                 rec.purify       = true
-                rec.purifyReason = string.format("Läutern entfernt %s (%.1f%% Leben)",
+                rec.purifyReason = string.format("Reinigen entfernt %s (%.1f%% Leben)",
                                                  ns.FormatNumber(removed), gainPct)
 
             elseif cfg.capProtection and gainPct >= (cfg.purifyMinGainPct * 0.5) then
@@ -276,7 +281,7 @@ function Core:EvaluateRecommendations(state)
                                    and (purify.timeToNextCharge or 99) <= cfg.capProtectionWindow
                 if maxCharges > 1 and (atCap or nearCap) then
                     rec.purify       = true
-                    rec.purifyReason = "Ladung läuft über – jetzt läutern"
+                    rec.purifyReason = "Ladung läuft über – jetzt reinigen"
                 end
             end
         end
@@ -535,7 +540,7 @@ function Core:PrintStatus()
     -- Client, der Leben oder Ladungen sperrt, schlicht kaputt.
     local gesperrt = {}
     if state.healthPct == nil                  then gesperrt[#gesperrt + 1] = "Leben" end
-    if state.purify and state.purify.unknown   then gesperrt[#gesperrt + 1] = "Läutern-Ladungen" end
+    if state.purify and state.purify.unknown   then gesperrt[#gesperrt + 1] = "Reinigen-Ladungen" end
     if state.celestial and state.celestial.unknown then gesperrt[#gesperrt + 1] = "Schild-Abklingzeit" end
     if #gesperrt > 0 then
         print("  |cffffaa00Gesperrt:|r    " .. table.concat(gesperrt, ", ")

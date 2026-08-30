@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Monk Stagger Display – Stagger-Anzeige für Braumeister-Mönche</title>
-<meta name="description" content="WoW-AddOn für Braumeister-Mönche: Echtzeit-Stagger-Tracking mit Empfehlungen für Läuterndes Gebräu und den Schild-Zauber.">
+<meta name="description" content="WoW-AddOn für Braumeister-Mönche: Echtzeit-Stagger-Tracking mit Empfehlungen für Reinigendes Gebräu und den Schild-Zauber.">
 <meta property="og:title" content="Monk Stagger Display">
 <meta property="og:description" content="Echtzeit-Stagger-Anzeige mit Gebräu-Empfehlungen für Braumeister-Mönche. WoW Retail 12.1.">
 <meta property="og:type" content="website">
@@ -336,7 +336,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       </div>
 
       <div class="brews">
-        <div class="brew" id="brewP" title="Läuterndes Gebräu">
+        <div class="brew" id="brewP" title="Reinigendes Gebräu">
           <svg viewBox="0 0 24 24" fill="none" stroke="#37E0A8" stroke-width="1.6" aria-hidden="true">
             <path d="M4 9h16l-1.6 9.2a2 2 0 0 1-2 1.8H7.6a2 2 0 0 1-2-1.8L4 9Z"/>
             <path d="M8.4 5.2c0 1.1 1.6 1.5 1.6 2.6M12 3.6c0 1.4 1.9 1.9 1.9 3.2M15.6 5.4c0 1-1.4 1.3-1.4 2.4"/>
@@ -354,11 +354,11 @@ footer{border-top:var(--rule);padding:26px 0 40px}
 
       <div class="rig-controls">
         <button class="btn" id="btnHit" type="button">Treffer einstecken</button>
-        <button class="btn btn-key" id="btnPurify" type="button">Läutern</button>
+        <button class="btn btn-key" id="btnPurify" type="button">Reinigen</button>
         <button class="btn" id="btnPause" type="button">Pause</button>
       </div>
       <p class="rig-note">
-        Der Pool baut sich über 10&nbsp;Sekunden ab. Läutern entfernt 50&nbsp;% davon.
+        Der Pool baut sich über 10&nbsp;Sekunden ab. Reinigen entfernt 60&nbsp;% davon – mindestens aber 8&nbsp;% deines maximalen Lebens.
         Bleibt der Balken rot, greift die Engine selbst ein.
       </p>
     </div>
@@ -372,7 +372,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <p class="lede">
           Als Braumeister landet ein Großteil des Schadens nicht sofort, sondern tropft
           über zehn Sekunden nach. <strong>Monk Stagger Display</strong> zeigt diesen Pool
-          in Echtzeit und sagt dir, wann Läutern den größten Wert hat – statt dich raten zu lassen.
+          in Echtzeit und sagt dir, wann Reinigen den größten Wert hat – statt dich raten zu lassen.
         </p>
         <div class="cta-row">
           <a class="btn btn-key" href="https://github.com/Basti2405/MonkStaggerDisplay/releases/latest">Aktuelles Release laden</a>
@@ -397,7 +397,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       <div class="band band-l">
         <div class="band-pct">&lt; 30 %</div>
         <h3 class="band-name">Leicht</h3>
-        <p>Der Pool tropft harmlos ab. Läutern hier verschenkt eine Ladung.</p>
+        <p>Der Pool tropft harmlos ab. Reinigen hier verschenkt eine Ladung.</p>
       </div>
       <div class="band band-m">
         <div class="band-pct">30 – 60 %</div>
@@ -407,7 +407,7 @@ footer{border-top:var(--rule);padding:26px 0 40px}
       <div class="band band-h">
         <div class="band-pct">&gt; 60 %</div>
         <h3 class="band-name">Schwer</h3>
-        <p>Läutern entfernt jetzt spürbar Schaden. Der Balken pulsiert.</p>
+        <p>Reinigen entfernt jetzt spürbar Schaden. Der Balken pulsiert.</p>
       </div>
     </div>
   </section>
@@ -442,14 +442,14 @@ footer{border-top:var(--rule);padding:26px 0 40px}
         <div>
           <h3>Über 60 % Stagger <em>und</em> mindestens 5 % Leben Ertrag</h3>
           <p>Die zweite Bedingung ist der eigentliche Punkt: Ein hoher Prozentwert allein sagt nichts,
-             wenn der Pool klein ist. Erst wenn Läutern echten Schaden entfernt, meldet sich die Engine.</p>
+             wenn der Pool klein ist. Erst wenn Reinigen echten Schaden entfernt, meldet sich die Engine.</p>
         </div>
       </div>
       <div class="rule">
         <div class="rule-tag warn">Ladungsschutz</div>
         <div>
           <h3>Eine Ladung würde verfallen</h3>
-          <p>Läuterndes Gebräu hat zwei Ladungen. Läuft die nächste gleich auf, geht Regeneration verloren –
+          <p>Reinigendes Gebräu hat zwei Ladungen. Läuft die nächste gleich auf, geht Regeneration verloren –
              die Engine drängt vorher, sofern der Ertrag noch zählt.</p>
         </div>
       </div>
@@ -536,10 +536,17 @@ scripts/install.sh <span class="p">"/pfad/Interface/AddOns"</span></pre>
       WINDOW        = 10,     // Sekunden bis der Pool leer ist
       TH_LIGHT      = 30,     // % max. Leben
       TH_MEDIUM     = 60,
-      PURIFY_REMOVE = 0.50,   // Anteil, den Läutern entfernt
+      PURIFY_REMOVE = 0.60,   // Anteil, den Reinigen entfernt
+      PURIFY_FLOOR  = 0.08,   // Sockel in Anteil max. Leben
       MIN_GAIN_PCT  = 5,      // Mindestertrag in % max. Leben
       MAX_CHARGES   = 2,
       RECHARGE      = 15;     // Sekunden
+
+  // "Entfernt bis zu 60 % des gestaffelten Schadens oder mindestens 8 %
+  // der maximalen Gesundheit" -- der Sockel greift bei kleinem Pool.
+  function entfernt(pool){
+    return Math.min(pool, Math.max(pool * PURIFY_REMOVE, MAX_HP * PURIFY_FLOOR));
+  }
 
   var el = {
     fill:    document.getElementById("fill"),
@@ -576,7 +583,7 @@ scripts/install.sh <span class="p">"/pfad/Interface/AddOns"</span></pre>
 
   function purify(){
     if (charges < 1 || pool <= 0) return;
-    pool *= (1 - PURIFY_REMOVE);
+    pool -= entfernt(pool);
     charges -= 1;
     if (rechargeLeft <= 0) rechargeLeft = RECHARGE;
     recFor = 0;
@@ -585,7 +592,7 @@ scripts/install.sh <span class="p">"/pfad/Interface/AddOns"</span></pre>
   function render(){
     var pct  = pool / MAX_HP * 100,
         dtps = pool / WINDOW,
-        gain = pool * PURIFY_REMOVE / MAX_HP * 100;
+        gain = entfernt(pool) / MAX_HP * 100;
 
     var color, name;
     if (pct >= TH_MEDIUM)     { color = "var(--s-heavy)"; name = "Schwer"; }
@@ -609,7 +616,7 @@ scripts/install.sh <span class="p">"/pfad/Interface/AddOns"</span></pre>
     el.chargeP.textContent = charges;
     el.prompt.classList.toggle("is-live", recommend);
     el.prompt.textContent = recommend
-      ? "Läutern entfernt " + fmt(pool * PURIFY_REMOVE) + " (" + gain.toFixed(1).replace(".", ",") + " % Leben)"
+      ? "Reinigen entfernt " + fmt(entfernt(pool)) + " (" + gain.toFixed(1).replace(".", ",") + " % Leben)"
       : (charges < 1 ? "Keine Ladung verfügbar – Pool läuft ab."
                      : "Engine ruhig – kein Handlungsbedarf.");
     return recommend;

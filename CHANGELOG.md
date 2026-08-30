@@ -15,6 +15,19 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
   des Staggers gesetzt — bei konstant 0 also nie. Übrig blieb allein das
   Kampfflag. Fällt das zwischen zwei Pulls für einen Moment ab, verschwand die
   Leiste mitten im Geschehen.
+- **Reinigendes Gebräu entfernt 60 %, nicht 50 % — und mindestens 8 % des
+  maximalen Lebens.** Der Tooltip in Midnight lautet „Entfernt bis zu 60 %
+  Eures gestaffelten Schadens oder mindestens 8 % Eurer maximalen
+  Gesundheit". Das AddOn rechnete mit 50 % und kannte den Sockelbetrag gar
+  nicht; bei kleinem Stagger war die Empfehlung dadurch deutlich zu
+  zurückhaltend. Neu `purifyMinFloorPct` (Standard 8), die Entfernung ist
+  jetzt `min(Stagger, max(Anteil, Sockel))` — mehr als vorhanden lässt sich
+  nie entfernen. **Migration auf `dbVersion` 2:** Wer noch den alten
+  Standardwert 50 gespeichert hat, bekommt die 60; ein selbst eingestellter
+  Wert bleibt unangetastet.
+- **„Läuterndes Gebräu" heißt in Midnight „Reinigendes Gebräu".** Die
+  Spell-ID 119582 ist unverändert — betroffen waren die fest eingetragenen
+  Texte im Optionsfenster, im README und auf der Projektseite.
 - **Wer Himmlische Infusion getalentet hatte, bekam nie eine
   Schild-Empfehlung.** Gemeldet als „der Schild heißt jetzt Himmlische
   Infusion" — tatsächlich ist es keine Umbenennung: **Himmlisches Gebräu**
@@ -42,6 +55,9 @@ die Versionierung an [Semantic Versioning](https://semver.org/lang/de/).
 - Die Sichtbarkeit hatte bis hierher **keine einzige Prüfung** — das ist der
   Grund, warum beides durchrutschte. Acht Testfälle decken jetzt entsperrten
   Anker, Spezialisierungswechsel, gesperrten Stagger und den Normalfall ab.
+- Die Live-Demo auf der Projektseite rechnete dieselbe Formel mit denselben
+  alten Werten — sie hätte sonst etwas anderes gezeigt als das AddOn tut.
+  Beide Sprachfassungen sind nachgezogen.
 - Neu `ns.GetCelestialSpellID()`: bestimmt über `IsPlayerSpell`, welcher der
   beiden Schild-Zauber auf diesem Charakter existiert, und wird bei jedem
   Durchlauf gestellt — ein Lookup ist billiger, als den Wert über

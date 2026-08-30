@@ -413,6 +413,64 @@ check("Symbol folgt beim Umtalentieren",
 
 BEKANNTE_ZAUBER[GEBRAEU], BEKANNTE_ZAUBER[INFUSION] = nil, nil
 
+print("\n== Reinigendes Gebräu: Anteil oder Sockel ==")
+-- Tooltip in Midnight: "Entfernt bis zu 60% Eures gestaffelten Schadens oder
+-- mindestens 8% Eurer maximalen Gesundheit." Das AddOn rechnete mit 50% und
+-- kannte den Sockel gar nicht -- bei kleinem Stagger war die Empfehlung
+-- deshalb zu zurueckhaltend.
+
+local cfg = ns.db.recommend
+check("Anteil steht auf 60 %", cfg.purifyRemovalPct == 60)
+check("Sockel steht auf 8 % max. Leben", cfg.purifyMinFloorPct == 8)
+
+local _hpmax, _stagger2 = _G.UnitHealthMax, _G.UnitStagger
+_G.UnitHealthMax = function() return 1000000 end
+BEKANNTE_ZAUBER[ns.SPELL.CELESTIAL_INFUSION] = true
+
+-- Grosser Stagger: 60 % davon (300k) schlaegt den Sockel (80k).
+_G.UnitStagger = function() return 500000 end
+local st1 = ns.Core:BuildState()
+check("Stagger 500k -> Anteil gewinnt (300k)",
+      math.abs((st1.purifyValue or 0) - 300000) < 1,
+      string.format("ist %.0f", st1.purifyValue or 0))
+
+-- Kleiner Stagger: 60 % waeren 60k, der Sockel von 80k ist mehr.
+_G.UnitStagger = function() return 100000 end
+local st2 = ns.Core:BuildState()
+check("Stagger 100k -> Sockel gewinnt (80k)",
+      math.abs((st2.purifyValue or 0) - 80000) < 1,
+      string.format("ist %.0f", st2.purifyValue or 0))
+
+-- Winziger Stagger: mehr als vorhanden laesst sich nie entfernen.
+_G.UnitStagger = function() return 20000 end
+local st3 = ns.Core:BuildState()
+check("Stagger 20k -> auf den Stagger gedeckelt",
+      math.abs((st3.purifyValue or 0) - 20000) < 1,
+      string.format("ist %.0f", st3.purifyValue or 0))
+
+_G.UnitHealthMax, _G.UnitStagger = _hpmax, _stagger2
+BEKANNTE_ZAUBER[ns.SPELL.CELESTIAL_INFUSION] = nil
+
+print("\n== Migration bestehender Einstellungen ==")
+-- applyDefaults ergaenzt nur fehlende Schluessel. Ein gespeichertes
+-- purifyRemovalPct = 50 bliebe stehen, und der Fix erreichte niemanden,
+-- der das AddOn schon benutzt.
+do
+    local alt = { dbVersion = 1, recommend = { purifyRemovalPct = 50 } }
+    _G.MonkStaggerDB = alt
+    ns.Config:Initialize()
+    check("alter Standardwert 50 wird auf 60 gehoben",
+          ns.db.recommend.purifyRemovalPct == 60)
+    check("Sockel wird ergänzt", ns.db.recommend.purifyMinFloorPct == 8)
+    check("dbVersion steht auf 2", ns.db.dbVersion == 2)
+
+    local eigen = { dbVersion = 1, recommend = { purifyRemovalPct = 55 } }
+    _G.MonkStaggerDB = eigen
+    ns.Config:Initialize()
+    check("selbst gesetzter Wert 55 bleibt unangetastet",
+          ns.db.recommend.purifyRemovalPct == 55)
+end
+
 print("")
 if failed == 0 then
     print("ERGEBNIS: alle Prüfungen bestanden")
